@@ -169,8 +169,8 @@ marital_encoded = marriage_mapping[marital]
 # Create DataFrame for manual input (match your dataset column names)
 input_df = pd.DataFrame([{
     "Age": age,
-    "Monthly_Income": monthly_income,
-    "Monthly_Expense": monthly_expense,
+    "Income": monthly_income,
+    "Debt": monthly_expense,
     "Num_Credit_Cards": credit_cards_count,
     "Credit_Score": credit_score,
     "Gender": gender_encoded,
@@ -223,7 +223,7 @@ fi_df = pd.DataFrame({
 st.bar_chart(fi_df.set_index("Feature"))
 
 
-# In[10]:
+# In[18]:
 
 
 # ==============================
@@ -237,7 +237,7 @@ shap_values = shap_explainer.shap_values(input_df)
 fig, ax = plt.subplots()
 shap.waterfall_plot(
     shap.Explanation(
-        values=shap_values[1][0],
+        values=shap_values[0][0],
         base_values=shap_explainer.expected_value[1],
         data=input_df.iloc[0],
         feature_names=X.columns
@@ -247,7 +247,7 @@ shap.waterfall_plot(
 st.pyplot(fig)
 
 
-# In[11]:
+# In[19]:
 
 
 # ==============================
@@ -271,7 +271,7 @@ fig_lime = lime_exp.as_pyplot_figure()
 st.pyplot(fig_lime)
 
 
-# In[12]:
+# In[20]:
 
 
 # ==============================
