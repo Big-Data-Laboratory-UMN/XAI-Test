@@ -6,3 +6,4 @@ scikit-learn
 shap
 lime
 seaborn
+cv2
