@@ -425,5 +425,200 @@ def individual_prediction_explanation(model, explainer, X_test, feature_names, i
 # In[ ]:
 
 
+# =====================================================
+# 5. DISKUSI ETIKA
+# =====================================================
 
+def ethical_discussion(df, model, X_test, y_test, y_pred):
+    """
+    Analisis dan diskusi etika: Apakah kreativitas bisa direduksi algoritma?
+    """
+    print("\n" + "=" * 70)
+    print("DISKUSI ETIKA: APAKAH KREATIVITAS BISA DIREDUKSI OLEH ALGORITMA?")
+    print("=" * 70)
+    
+    # 1. Analisis prediksi yang salah
+    wrong_predictions = X_test[y_test != y_pred].copy()
+    wrong_predictions['Actual'] = y_test[y_test != y_pred]
+    wrong_predictions['Predicted'] = y_pred[y_test != y_pred]
+    
+    print("\n1. BATASAN MODEL:")
+    print(f"   - Akurasi Model: {accuracy_score(y_test, y_pred):.2%}")
+    print(f"   - Prediksi Salah: {len(wrong_predictions)} dari {len(y_test)} kasus")
+    print(f"   - Error Rate: {(len(wrong_predictions)/len(y_test))*100:.2f}%")
+    
+    # 2. Variance in similar content
+    similar_content = df[df['Type'] == 'Photo'].copy()
+    engagement_variance = similar_content['Total Interactions'].std()
+    engagement_mean = similar_content['Total Interactions'].mean()
+    cv = (engagement_variance / engagement_mean) * 100
+    
+    print(f"\n2. VARIABILITAS KONTEN SERUPA (Photo):")
+    print(f"   - Mean Engagement: {engagement_mean:.2f}")
+    print(f"   - Standard Deviation: {engagement_variance:.2f}")
+    print(f"   - Coefficient of Variation: {cv:.2f}%")
+    print(f"   → Konten serupa memiliki engagement yang sangat bervariasi!")
+    
+    # 3. Faktor yang tidak terukur
+    print("\n3. FAKTOR KREATIVITAS YANG TIDAK TERTANGKAP MODEL:")
+    print("   - Kualitas visual/estetika konten")
+    print("   - Emosi yang ditimbulkan (humor, empati, inspirasi)")
+    print("   - Relevansi dengan peristiwa terkini (trending topics)")
+    print("   - Keaslian dan keunikan ide")
+    print("   - Storytelling dan narasi")
+    print("   - Timing psikologis (bukan hanya jam posting)")
+    
+    # 4. Paradoks optimasi
+    print("\n4. PARADOKS OPTIMASI ALGORITMA:")
+    print("   - Model memprediksi berdasarkan pola MASA LALU")
+    print("   - Kreativitas sejati adalah tentang INOVASI & KEJUTAN")
+    print("   - Over-optimization → Konten homogen & kehilangan orisinalitas")
+    print("   - Risiko: 'Creative Conformity' - semua konten jadi mirip")
+    
+    # 5. Implikasi etika
+    print("\n5. IMPLIKASI ETIKA & KEBIJAKAN:")
+    print("   a) UNTUK KREATOR:")
+    print("      • Gunakan AI sebagai PANDUAN, bukan ATURAN MUTLAK")
+    print("      • Jangan korbankan autentisitas demi engagement tinggi")
+    print("      • Eksperimen tetap penting untuk inovasi")
+    
+    print("\n   b) UNTUK PLATFORM:")
+    print("      • Transparansi algoritma rekomendasi")
+    print("      • Diversity dalam konten yang dipromosikan")
+    print("      • Hindari filter bubble yang mempersempit kreativitas")
+    
+    print("\n   c) UNTUK AUDIENCE:")
+    print("      • Kesadaran bahwa konten yang terlihat dipengaruhi algoritma")
+    print("      • Active seeking konten di luar zona nyaman")
+    print("      • Menghargai originalitas vs viral")
+    
+    # 6. Kesimpulan
+    print("\n" + "=" * 70)
+    print("KESIMPULAN:")
+    print("=" * 70)
+    print("""
+    ✓ AI DAPAT memprediksi engagement dengan akurasi reasonable
+    ✗ AI TIDAK DAPAT sepenuhnya menangkap esensi kreativitas
+    
+    REKOMENDASI:
+    → Gunakan AI untuk INFORMED DECISION, bukan FINAL DECISION
+    → Balance antara data-driven insights & creative intuition
+    → Tetap prioritaskan autentisitas dan nilai konten
+    → Kreativitas adalah kombinasi SENI dan SAINS
+    
+    "The best content is not what algorithm predicts,
+     but what authentically resonates with human hearts."
+    """)
+    
+    # Plot ilustrasi
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig.suptitle('ETIKA & BATASAN PREDIKSI ALGORITMA', fontsize=14, fontweight='bold')
+    
+    # Left: Variance dalam konten serupa
+    content_types = df.groupby('Type')['Total Interactions'].apply(list)
+    axes[0].boxplot([content_types[t] for t in content_types.index], 
+                    labels=content_types.index)
+    axes[0].set_title('Variabilitas Engagement per Tipe Konten\n(Bukti: Konten serupa ≠ Hasil serupa)')
+    axes[0].set_ylabel('Total Interactions')
+    axes[0].set_xlabel('Content Type')
+    axes[0].grid(axis='y', alpha=0.3)
+    
+    # Right: Model error distribution
+    error_data = pd.DataFrame({
+        'Actual': ['Low', 'Low', 'High', 'High'],
+        'Count': [
+            sum((y_test == 0) & (y_pred == 0)),  # True Low
+            sum((y_test == 0) & (y_pred == 1)),  # False High
+            sum((y_test == 1) & (y_pred == 0)),  # False Low
+            sum((y_test == 1) & (y_pred == 1))   # True High
+        ],
+        'Type': ['Correct', 'Error', 'Error', 'Correct']
+    })
+    
+    colors = ['#2ecc71' if t == 'Correct' else '#e74c3c' for t in error_data['Type']]
+    axes[1].bar(range(len(error_data)), error_data['Count'], color=colors)
+    axes[1].set_title('Distribusi Prediksi Model\n(Hijau=Benar, Merah=Salah)')
+    axes[1].set_ylabel('Jumlah Kasus')
+    axes[1].set_xlabel('Kategori Prediksi')
+    axes[1].set_xticks(range(4))
+    axes[1].set_xticklabels(['True Low', 'False High\n(Overpredict)', 
+                             'False Low\n(Underpredict)', 'True High'])
+    axes[1].grid(axis='y', alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('ethical_analysis.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+
+# In[ ]:
+
+
+# =====================================================
+# 6. MAIN PROGRAM
+# =====================================================
+
+def main():
+    """
+    Main program execution
+    """
+    print("=" * 70)
+    print(" PREDIKSI ENGAGEMENT KONTEN MEDIA SOSIAL ".center(70, "="))
+    print(" dengan Explainable AI & Diskusi Etika ".center(70, "="))
+    print("=" * 70)
+    
+    # Load data
+    filepath = 'facebook_metrics.csv'  # Ganti dengan path file Anda
+    df, threshold = load_and_preprocess_data(filepath)
+    
+    # EDA
+    perform_eda(df)
+    
+    # Feature engineering
+    X, y, le_type, le_target, original_features = create_features(df)
+    feature_names = X.columns.tolist()
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    print(f"\nTraining set: {len(X_train)} samples")
+    print(f"Testing set: {len(X_test)} samples")
+    
+    # Train models
+    results, best_model, best_model_name = train_models(X_train, X_test, y_train, y_test)
+    
+    # Plot comparisons
+    plot_model_comparison(results)
+    
+    # Confusion matrix
+    y_pred = results[best_model_name]['y_pred']
+    plot_confusion_matrix(y_test, y_pred, le_target)
+    
+    # SHAP Analysis
+    shap_values, explainer = shap_analysis(best_model, X_train, X_test, feature_names)
+    
+    # Individual explanation
+    individual_prediction_explanation(best_model, explainer, X_test, feature_names, idx=0)
+    
+    # Ethical discussion
+    ethical_discussion(df, best_model, X_test, y_test, y_pred)
+    
+    print("\n" + "=" * 70)
+    print("PROGRAM SELESAI - Semua visualisasi telah disimpan!")
+    print("=" * 70)
+    print("\nFile yang dihasilkan:")
+    print("1. eda_analysis.png - Exploratory Data Analysis")
+    print("2. model_comparison.png - Perbandingan Model")
+    print("3. confusion_matrix.png - Confusion Matrix")
+    print("4. shap_importance.png - Feature Importance")
+    print("5. shap_summary.png - SHAP Summary")
+    print("6. shap_dependence.png - SHAP Dependence")
+    print("7. shap_individual_0.png - Penjelasan Individual")
+    print("8. ethical_analysis.png - Analisis Etika")
+
+
+if __name__ == "__main__":
+    # Jalankan program
+    main()
 
