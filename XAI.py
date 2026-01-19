@@ -175,12 +175,12 @@ input_df = pd.DataFrame([{
     "Debt": monthly_expense,
     "Credit_Score": credit_score,
     "Loan_Amount": loan_amount,
-    "Loan_Term": loan_term
+    "Loan_Term": loan_term,
     "Num_Credit_Cards": credit_cards_count,
     "Payment_History": paymenthistory_encoded,
     "Employment_Status": employmentstatus_encoded,
     "Residence_Type": residence_encoded,
-    "Marital_Status": marital_encoded,
+    "Marital_Status": marital_encoded
 }])
 
 
