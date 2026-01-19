@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[3]:
 
 
 import streamlit as st
@@ -18,7 +18,7 @@ st.title("📊 Prediksi Viralitas Konten (High vs Low Engagement) + XAI")
 # ===============================
 # LOAD DATA
 # ===============================
-df = pd.read_csv("dataset_Facebook.csv")
+df = pd.read_csv("dataset_Facebook.csv", delimiter=";")
 
 # Encode Type
 le = LabelEncoder()
