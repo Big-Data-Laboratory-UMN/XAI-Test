@@ -6,4 +6,4 @@ scikit-learn
 shap
 lime
 seaborn
-opencv-python
+opencv-python-headless
