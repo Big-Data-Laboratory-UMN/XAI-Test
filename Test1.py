@@ -34,7 +34,7 @@ def load_and_preprocess_data(filepath):
     Load dan preprocessing dataset Facebook Metrics
     """
     # Load data
-    df = pd.read_csv(filepath, sep=';')
+    df = pd.read_csv("dataset_Facebook.csv", sep=';')
     
     print("=" * 60)
     print("DATASET OVERVIEW")
