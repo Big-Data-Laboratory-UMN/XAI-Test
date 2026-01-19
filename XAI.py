@@ -169,18 +169,18 @@ marital_encoded = marriage_mapping[marital]
 # Create DataFrame for manual input (match your dataset column names)
 input_df = pd.DataFrame([{
     "Age": age,
-    "Income": monthly_income,
-    "Debt": monthly_expense,
-    "Num_Credit_Cards": credit_cards_count,
-    "Credit_Score": credit_score,
     "Gender": gender_encoded,
     "Education": education_encoded,
+    "Income": monthly_income,
+    "Debt": monthly_expense,
+    "Credit_Score": credit_score,
+    "Loan_Amount": loan_amount,
+    "Loan_Term": loan_term
+    "Num_Credit_Cards": credit_cards_count,
     "Payment_History": paymenthistory_encoded,
     "Employment_Status": employmentstatus_encoded,
     "Residence_Type": residence_encoded,
     "Marital_Status": marital_encoded,
-    "Loan_Amount": loan_amount,
-    "Loan_Term": loan_term
 }])
 
 
