@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-    # In[ ]:
 def run_media_engagement_app():
     import streamlit as st
     import pandas as pd
@@ -37,10 +36,6 @@ def run_media_engagement_app():
         "Type", "Category", "Post Month", "Post Weekday", "Post Hour", "Paid",
         "Lifetime Post Total Reach", "Lifetime Engaged Users", "comment", "like", "share"
     ]
-    
-    
-    # In[ ]:
-    
     
     # ===============================
     # FUNCTION: TRAIN PIPELINE
@@ -78,18 +73,15 @@ def run_media_engagement_app():
     
         return model, encoders, acc, X_train, y_train
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 1️⃣ UPLOAD CSV
     # ===============================
     st.header("1️⃣ Upload Dataset CSV")
     
-    uploaded = st.file_uploader("Upload CSV (next upload will be appended)", type=["csv"])
+    # ADDED UNIQUE KEY FOR TAB 1
+    uploaded = st.file_uploader("Upload CSV (next upload will be appended)", type=["csv"], key="tab1_media_engagement_uploader")
     
-    if st.button("📥 Upload & Train Model"):
+    if st.button("📥 Upload & Train Model", key="tab1_upload_train_btn"):
         if uploaded is not None:
             new_df = pd.read_csv(uploaded, sep=';')
     
@@ -109,10 +101,6 @@ def run_media_engagement_app():
     
             st.success("✅ Dataset updated, retrain model")
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 2️⃣ INPUT MANUAL ROW
     # ===============================
@@ -123,19 +111,19 @@ def run_media_engagement_app():
     else:
         type_options = st.session_state.encoders["Type"].classes_
     
-    type_input = st.selectbox("Type", type_options)
-    category = st.number_input("Category", 1, 3, 2)
-    post_month = st.number_input("Post Month", 1, 12, 12)
-    weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 3)
-    hour = st.number_input("Post Hour", 0, 23, 10)
-    paid = st.selectbox("Paid Promotion?", [0, 1])
-    reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 10000)
-    engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 500)
-    comment = st.number_input("Comment", 0, 5000, 10)
-    like = st.number_input("Like", 0, 100000, 100)
-    share = st.number_input("Share", 0, 5000, 10)
+    type_input = st.selectbox("Type", type_options, key="tab1_type_select")
+    category = st.number_input("Category", 1, 3, 2, key="tab1_category")
+    post_month = st.number_input("Post Month", 1, 12, 12, key="tab1_month")
+    weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 3, key="tab1_weekday")
+    hour = st.number_input("Post Hour", 0, 23, 10, key="tab1_hour")
+    paid = st.selectbox("Paid Promotion?", [0, 1], key="tab1_paid")
+    reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 10000, key="tab1_reach")
+    engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 500, key="tab1_engaged")
+    comment = st.number_input("Comment", 0, 5000, 10, key="tab1_comment")
+    like = st.number_input("Like", 0, 100000, 100, key="tab1_like")
+    share = st.number_input("Share", 0, 5000, 10, key="tab1_share")
     
-    if st.button("➕ Add & Re-train"):
+    if st.button("➕ Add & Re-train", key="tab1_add_retrain_btn"):
     
         if st.session_state.df is None:
             st.warning("⚠️ Upload data to begin")
@@ -176,10 +164,6 @@ def run_media_engagement_app():
     
             st.success("✅ Data Added, retrain model")
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 3️⃣ EVALUATION + GLOBAL XAI
     # ===============================
@@ -202,10 +186,6 @@ def run_media_engagement_app():
     
         st.dataframe(fi)
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 4️⃣ INPUT UNTUK TEST PREDIKSI
     # ===============================
@@ -213,19 +193,19 @@ def run_media_engagement_app():
     
         st.header("4️⃣ Input data for Predictions")
     
-        type_input_p = st.selectbox("Type (prediksi)", type_options, key="p1")
-        category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="p2")
-        post_month_p = st.number_input("Post Month (prediksi)", 1, 12, 12, key="p3")
-        weekday_p = st.number_input("Post Weekday (prediksi)", 1, 7, 3, key="p4")
-        hour_p = st.number_input("Post Hour (prediksi)", 0, 23, 10, key="p5")
-        paid_p = st.selectbox("Paid Promotion? (prediksi)", [0, 1], key="p6")
-        reach_p = st.number_input("Lifetime Post Total Reach (prediksi)", 0, 1000000, 10000, key="p7")
-        engaged_p = st.number_input("Lifetime Engaged Users (prediksi)", 0, 100000, 500, key="p8")
-        comment_p = st.number_input("Comment (prediksi)", 0, 5000, 10, key="p9")
-        like_p = st.number_input("Like (prediksi)", 0, 100000, 100, key="p10")
-        share_p = st.number_input("Share (prediksi)", 0, 5000, 10, key="p11")
+        type_input_p = st.selectbox("Type (prediksi)", type_options, key="tab1_p1")
+        category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="tab1_p2")
+        post_month_p = st.number_input("Post Month (prediksi)", 1, 12, 12, key="tab1_p3")
+        weekday_p = st.number_input("Post Weekday (prediksi)", 1, 7, 3, key="tab1_p4")
+        hour_p = st.number_input("Post Hour (prediksi)", 0, 23, 10, key="tab1_p5")
+        paid_p = st.selectbox("Paid Promotion? (prediksi)", [0, 1], key="tab1_p6")
+        reach_p = st.number_input("Lifetime Post Total Reach (prediksi)", 0, 1000000, 10000, key="tab1_p7")
+        engaged_p = st.number_input("Lifetime Engaged Users (prediksi)", 0, 100000, 500, key="tab1_p8")
+        comment_p = st.number_input("Comment (prediksi)", 0, 5000, 10, key="tab1_p9")
+        like_p = st.number_input("Like (prediksi)", 0, 100000, 100, key="tab1_p10")
+        share_p = st.number_input("Share (prediksi)", 0, 5000, 10, key="tab1_p11")
     
-        if st.button("🔮 Predict"):
+        if st.button("🔮 Predict", key="tab1_predict_btn"):
     
             type_encoded_p = st.session_state.encoders["Type"].transform([type_input_p])[0]
     
@@ -295,10 +275,3 @@ def run_media_engagement_app():
             fig_local, ax_local = plt.subplots()
             shap.plots.waterfall(shap_explanation, show=False)
             st.pyplot(fig_local)
-    
-    
-    # In[ ]:
-
-
-
-
