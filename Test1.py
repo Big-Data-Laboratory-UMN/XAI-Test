@@ -16,7 +16,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 st.set_page_config(page_title="Engagement Predictor + XAI + SHAP", layout="wide")
-st.title("📊 Engagement Predictor — Adaptive Learning + XAI + SHAP")
+st.title("📊 Social Media Content Engagement Prediction (High vs Low Engagement)")
+st.header("\"Why does This content Get More Likes and Shares?\"")
 
 # ===============================
 # SESSION STATE
@@ -87,7 +88,7 @@ def train_model(df):
 # ===============================
 st.header("1️⃣ Upload Dataset CSV")
 
-uploaded = st.file_uploader("Upload CSV (boleh berkali-kali, akan di-append)", type=["csv"])
+uploaded = st.file_uploader("Upload CSV (next upload will be appended)", type=["csv"])
 
 if st.button("📥 Upload & Train Model"):
     if uploaded is not None:
@@ -107,7 +108,7 @@ if st.button("📥 Upload & Train Model"):
         st.session_state.y_train = y_train
         st.session_state.trained = True
 
-        st.success("✅ Dataset diupdate & model berhasil dilatih ulang")
+        st.success("✅ Dataset updated, retrain model")
 
 
 # In[ ]:
@@ -116,7 +117,7 @@ if st.button("📥 Upload & Train Model"):
 # ===============================
 # 2️⃣ INPUT MANUAL ROW
 # ===============================
-st.header("2️⃣ Tambah Data Manual ke Dataset")
+st.header("2️⃣ Add new Data to Dataset")
 
 if st.session_state.encoders is None:
     type_options = ["Photo", "Status"]
@@ -138,7 +139,7 @@ share = st.number_input("Share", 0, 5000, 10)
 if st.button("➕ Tambahkan & Train Ulang"):
 
     if st.session_state.df is None:
-        st.warning("⚠️ Upload dataset dulu")
+        st.warning("⚠️ Upload data to begin")
     else:
         if st.session_state.encoders:
             type_encoded = st.session_state.encoders["Type"].transform([type_input])[0]
@@ -174,7 +175,7 @@ if st.button("➕ Tambahkan & Train Ulang"):
         st.session_state.y_train = y_train
         st.session_state.trained = True
 
-        st.success("✅ Data ditambahkan & model dilatih ulang")
+        st.success("✅ Data Added, retrain model")
 
 
 # In[ ]:
@@ -185,7 +186,7 @@ if st.button("➕ Tambahkan & Train Ulang"):
 # ===============================
 if st.session_state.trained:
 
-    st.header("3️⃣ Evaluasi Model & Global Feature Importance")
+    st.header("3️⃣ Model Evaluation & Global Feature Importance")
 
     st.metric("🎯 Accuracy", f"{st.session_state.acc*100:.2f}%")
 
@@ -211,7 +212,7 @@ if st.session_state.trained:
 # ===============================
 if st.session_state.trained:
 
-    st.header("4️⃣ Input Data untuk Test Prediksi")
+    st.header("4️⃣ Input data for Predictions")
 
     type_input_p = st.selectbox("Type (prediksi)", type_options, key="p1")
     category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="p2")
@@ -256,7 +257,7 @@ if st.session_state.trained:
         # ===============================
         # 5️⃣ XAI SIMPLE
         # ===============================
-        st.header("5️⃣ XAI — Faktor Dominan (Global-based)")
+        st.header("5️⃣ XAI — Dominant Factors (Global-based)")
 
         contrib = pd.DataFrame({
             "Feature": FEATURES,
@@ -269,7 +270,7 @@ if st.session_state.trained:
         # ===============================
         # 6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak
         # ===============================
-        st.header("6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak")
+        st.header("6️⃣ SHAP — Why The Content Go Viral?")
         
         explainer = shap.TreeExplainer(model)
         
