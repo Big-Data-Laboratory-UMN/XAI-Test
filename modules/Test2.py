@@ -179,4 +179,27 @@ def run_ad_design_app():
                     st.success(f"Effective ({pr*100:.1f}%)")
                 else:
                     st.warning(f"Less Effective ({(1-pr)*100:.1f}%)")
-
+                    
+        # ====================================
+        # LOCAL XAI
+        # ====================================
+        st.header("🔍 Kenapa hasilnya seperti ini? (Local XAI)")
+    
+        perm = permutation_importance(model, X, y, n_repeats=10, random_state=42)
+    
+        local_imp = pd.DataFrame({
+            "Feature": X.columns,
+            "Importance": perm.importances_mean
+        }).sort_values(by="Importance", ascending=False)
+    
+        fig2, ax2 = plt.subplots()
+        ax2.barh(local_imp["Feature"], local_imp["Importance"])
+        ax2.invert_yaxis()
+        ax2.set_title("Local Explanation (Permutation Importance)")
+        st.pyplot(fig2)
+    
+        st.dataframe(local_imp)
+    
+        st.subheader("🏆 Faktor Paling Menentukan:")
+        for i, row in local_imp.head(3).iterrows():
+            st.write(f"• **{row['Feature']}**")
