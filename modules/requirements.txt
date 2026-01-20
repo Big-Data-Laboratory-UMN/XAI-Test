@@ -8,3 +8,6 @@ lime
 seaborn
 opencv-python-headless
 shap
+tensorflow
+opencv-python
+pillow
