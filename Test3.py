@@ -149,20 +149,6 @@ st.pyplot(fig)
 
 st.dataframe(fi_df)
 
-# ===============================
-# SHAP GLOBAL
-# ===============================
-st.subheader("🧠 SHAP Global Explanation")
-
-explainer = shap.TreeExplainer(model)
-shap_exp = explainer(X_train)
-
-shap_vals_global = shap_exp.values[:, :, 1]
-
-fig_shap, ax_shap = plt.subplots()
-shap.summary_plot(shap_vals_global, X_train, show=False)
-st.pyplot(fig_shap)
-
 
 # In[ ]:
 
