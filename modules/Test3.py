@@ -22,44 +22,41 @@ def run_purchase_app():
     # ===============================
     # SESSION DATASET
     # ===============================
-    if "df" not in st.session_state:
-        st.session_state.df = None
-    if "model" not in st.session_state:
-        st.session_state.model = None
-    if "encoders" not in st.session_state:
-        st.session_state.encoders = None
-    if "trained" not in st.session_state:
-        st.session_state.trained = False
-    
-    
-    # In[ ]:
-    
+    if "df_purchase" not in st.session_state:
+        st.session_state.df_purchase = None
+    if "model_purchase" not in st.session_state:
+        st.session_state.model_purchase = None
+    if "encoders_purchase" not in st.session_state:
+        st.session_state.encoders_purchase = None
+    if "trained_purchase" not in st.session_state:
+        st.session_state.trained_purchase = False
     
     # ===============================
     # 1️⃣ UPLOAD CSV
     # ===============================
     st.header("1️⃣ Upload Dataset CSV")
     
-    uploaded = st.file_uploader("Upload CSV (Online Shoppers)", type=["csv"])
+    # UNIQUE KEY FOR TAB 3
+    uploaded = st.file_uploader("Upload CSV (Online Shoppers)", type=["csv"], key="tab3_purchase_uploader")
     
     if uploaded:
         new_df = pd.read_csv(uploaded)
     
-        if st.session_state.df is None:
-            st.session_state.df = new_df
+        if st.session_state.df_purchase is None:
+            st.session_state.df_purchase = new_df
         else:
-            st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
+            st.session_state.df_purchase = pd.concat([st.session_state.df_purchase, new_df], ignore_index=True)
     
-        st.success(f"✅ Dataset contain {len(st.session_state.df)} rows")
+        st.success(f"✅ Dataset contain {len(st.session_state.df_purchase)} rows")
     
     # ===============================
     # STOP IF NO DATA
     # ===============================
-    if st.session_state.df is None:
+    if st.session_state.df_purchase is None:
         st.warning("⚠️ Upload the dataset to begin")
         st.stop()
     
-    df = st.session_state.df.copy()
+    df = st.session_state.df_purchase.copy()
     
     # ===============================
     # ENCODING
@@ -72,10 +69,6 @@ def run_purchase_app():
         df[col] = le.fit_transform(df[col])
         encoders[col] = le
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 2️⃣ INPUT MANUAL TRAINING
     # ===============================
@@ -84,28 +77,26 @@ def run_purchase_app():
     with st.expander("➕ Add 1 new row into dataset"):
     
         manual_row = {}
-    
+        
+        col_idx = 0
         for col in df.columns:
             if col in ["Month", "VisitorType", "Weekend", "Revenue"]:
-                manual_row[col] = st.selectbox(f"{col}", encoders[col].classes_)
+                manual_row[col] = st.selectbox(f"{col}", encoders[col].classes_, key=f"tab3_manual_{col_idx}")
             else:
-                manual_row[col] = st.number_input(col, value=float(df[col].median()))
+                manual_row[col] = st.number_input(col, value=float(df[col].median()), key=f"tab3_manual_{col_idx}")
+            col_idx += 1
     
-        if st.button("➕ Tambahkan ke Dataset & Retrain"):
+        if st.button("➕ Add to Dataset & Retrain", key="tab3_add_retrain_btn"):
             for col in ["Month", "VisitorType", "Weekend", "Revenue"]:
                 manual_row[col] = encoders[col].transform([manual_row[col]])[0]
     
-            st.session_state.df = pd.concat(
-                [st.session_state.df, pd.DataFrame([manual_row])],
+            st.session_state.df_purchase = pd.concat(
+                [st.session_state.df_purchase, pd.DataFrame([manual_row])],
                 ignore_index=True
             )
     
             st.success("✅ Input has been added, retraining model")
             st.rerun()
-    
-    
-    # In[ ]:
-    
     
     # ===============================
     # TARGET & FEATURE
@@ -136,10 +127,6 @@ def run_purchase_app():
     
     st.success(f"🎯 Model Accuracy: {acc*100:.2f}%")
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # GLOBAL FEATURE IMPORTANCE
     # ===============================
@@ -157,10 +144,6 @@ def run_purchase_app():
     
     st.dataframe(fi_df)
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 4️⃣ INPUT MANUAL TEST
     # ===============================
@@ -168,11 +151,13 @@ def run_purchase_app():
     
     input_test = {}
     
+    test_idx = 0
     for col in X.columns:
         if col in ["Month", "VisitorType", "Weekend"]:
-            input_test[col] = st.selectbox(f"{col} (Test)", encoders[col].classes_)
+            input_test[col] = st.selectbox(f"{col} (Test)", encoders[col].classes_, key=f"tab3_test_{test_idx}")
         else:
-            input_test[col] = st.number_input(f"{col} (Test)", value=float(df[col].median()))
+            input_test[col] = st.number_input(f"{col} (Test)", value=float(df[col].median()), key=f"tab3_test_{test_idx}")
+        test_idx += 1
     
     # encode
     for col in ["Month", "VisitorType", "Weekend"]:
@@ -180,14 +165,10 @@ def run_purchase_app():
     
     input_pred = pd.DataFrame([input_test])
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 5️⃣ Prediction
     # ===============================
-    if st.button("🔮 Predict Purchase"):
+    if st.button("🔮 Predict Purchase", key="tab3_predict_btn"):
     
         pred = model.predict(input_pred)[0]
         prob = model.predict_proba(input_pred)[0][pred]
@@ -229,5 +210,4 @@ def run_purchase_app():
     
         fig_local, ax_local = plt.subplots()
         shap.plots.waterfall(shap_explanation, show=False)
-        st.pyplot(fig_local)                                                                    
-
+        st.pyplot(fig_local)
