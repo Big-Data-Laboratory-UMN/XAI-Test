@@ -185,7 +185,7 @@ def run_ad_design_app():
     # ====================================
     # GLOBAL XAI
     # ====================================
-    st.header("🧠 Global XAI — Elemen Visual Paling Berpengaruh")
+    st.header("🧠 Global XAI — Most Effective Elements")
     
     fi = pd.DataFrame({
         "Feature": X.columns,
@@ -207,9 +207,9 @@ def run_ad_design_app():
     # ====================================
     # UI INPUT
     # ====================================
-    st.header("🖼️ Upload Desain Iklan")
+    st.header("🖼️ Upload Image File")
     
-    uploaded = st.file_uploader("Upload image iklan", type=["jpg", "png", "jpeg"])
+    uploaded = st.file_uploader("Upload ads image", type=["jpg", "png", "jpeg"])
     
     #has_cta = st.selectbox("Apakah ada CTA (Buy Now, Learn More, etc)?", [0, 1])
     #format_type = st.selectbox("Format Iklan", ["Square", "Vertical", "Horizontal"])
@@ -235,7 +235,7 @@ def run_ad_design_app():
         # ===============================
         # ANALISIS VISUAL KONTEN
         # ===============================
-        st.header("🔎 Analisis Otomatis Konten Visual")
+        st.header("🔎 Analysis on ads")
     
         analysis = analyze_visual_content(img)
     
@@ -255,11 +255,11 @@ def run_ad_design_app():
             st.metric("CTA Detected (AI)", "YES" if analysis["has_cta_detected"] else "NO")
     
         st.markdown("""
-        **Interpretasi Singkat:**
-        - Text Density tinggi → risiko clutter
-        - Kontras rendah → iklan sulit dibaca
-        - Alignment tidak konsisten → visual tidak rapi
-        - CTA terdeteksi → potensi konversi lebih tinggi
+        **Short Analyze Interpretation:**
+        - Text Density High → risk on clutter
+        - Low Contrast → ads hard to read
+        - Inconsistent Alignment → less attractive visual
+        - CTA detected → More Effective
         """)
     
         st.image(img, caption="Original Design", width=300)
@@ -276,13 +276,44 @@ def run_ad_design_app():
     
         pred = model.predict(input_df)[0]
         prob = model.predict_proba(input_df)[0][pred]
+
+        # ====================================
+        # AUGMENTATION
+        # ====================================
+        st.header("🧪 Augmentation Simulation (Design & Interpretation)")
     
-        st.subheader("📢 Hasil Prediksi")
+        aug_imgs = augment_image(img)
+    
+        cols = st.columns(len(aug_imgs))
+    
+        for i, (name, aug_img) in enumerate(aug_imgs.items()):
+            with cols[i]:
+                st.image(aug_img, caption=name, width=200)
+    
+                b, c, e = extract_features(aug_img)
+    
+                aug_input = pd.DataFrame([{
+                    "brightness": b,
+                    "contrast": c,
+                    "edge_density": e,
+                    "has_cta": has_cta
+                }])
+    
+                p = model.predict(aug_input)[0]
+                pr = model.predict_proba(aug_input)[0][p]
+    
+                if p == 1:
+                    st.success(f"Effective ({pr*100:.1f}%)")
+                else:
+                    st.warning(f"Less Effective ({pr*100:.1f}%)")
+
+        
+        st.subheader("📢 Prediction Results")
     
         if pred == 1:
-            st.success(f"✅ Prediksi: EFFECTIVE ({prob*100:.2f}%)")
+            st.success(f"✅ Prediction: EFFECTIVE ({prob*100:.2f}%)")
         else:
-            st.warning(f"⚠️ Prediksi: LESS EFFECTIVE ({prob*100:.2f}%)")
+            st.warning(f"⚠️ Prediction: LESS EFFECTIVE ({prob*100:.2f}%)")
     
     
     # In[ ]:
@@ -316,33 +347,5 @@ def run_ad_design_app():
     # In[ ]:
     
     
-    # ====================================
-        # AUGMENTATION
-        # ====================================
-        st.header("🧪 Simulasi Augmentasi Desain + Interpretasi")
-    
-        aug_imgs = augment_image(img)
-    
-        cols = st.columns(len(aug_imgs))
-    
-        for i, (name, aug_img) in enumerate(aug_imgs.items()):
-            with cols[i]:
-                st.image(aug_img, caption=name, width=200)
-    
-                b, c, e = extract_features(aug_img)
-    
-                aug_input = pd.DataFrame([{
-                    "brightness": b,
-                    "contrast": c,
-                    "edge_density": e,
-                    "has_cta": has_cta
-                }])
-    
-                p = model.predict(aug_input)[0]
-                pr = model.predict_proba(aug_input)[0][p]
-    
-                if p == 1:
-                    st.success(f"Effective ({pr*100:.1f}%)")
-                else:
-                    st.warning(f"Less Effective ({pr*100:.1f}%)")
+        
 
