@@ -16,7 +16,8 @@ from sklearn.inspection import permutation_importance
 
 st.set_page_config(page_title="Ad Design Effectiveness AI + XAI", layout="wide")
 
-st.title("🎨 AI Evaluasi Efektivitas Desain Iklan Digital + XAI")
+st.title("🎨 Visual Design Evaluation")
+st.header("\"Why Is This Design Considered More Effective?\"")
 
 
 # In[ ]:
