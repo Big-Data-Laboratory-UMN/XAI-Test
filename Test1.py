@@ -91,7 +91,7 @@ uploaded = st.file_uploader("Upload CSV (boleh berkali-kali, akan di-append)", t
 
 if st.button("📥 Upload & Train Model"):
     if uploaded is not None:
-        new_df = pd.read_csv(uploaded)
+        new_df = pd.read_csv(uploaded, sep=';')
 
         if st.session_state.df is None:
             st.session_state.df = new_df
