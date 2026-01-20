@@ -253,40 +253,42 @@ if st.session_state.trained:
         else:
             st.warning(f"❄️ Prediksi: LOW Engagement ({prob*100:.2f}%)")
 
+        # ===============================
+        # 5️⃣ XAI SIMPLE
+        # ===============================
+        st.header("5️⃣ XAI — Faktor Dominan (Global-based)")
+
+        contrib = pd.DataFrame({
+            "Feature": FEATURES,
+            "Value": input_pred.iloc[0].values,
+            "Importance": model.feature_importances_
+        }).sort_values(by="Importance", ascending=False)
+
+        st.dataframe(contrib)
+
+        # ===============================
+        # 6️⃣ SHAP LOCAL
+        # ===============================
+        st.header("6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak")
+
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(input_pred)
+
+        fig_local, ax_local = plt.subplots()
+        shap.waterfall_plot(
+            shap.Explanation(
+                values=shap_values[1][0],
+                base_values=explainer.expected_value[1],
+                data=input_pred.iloc[0],
+                feature_names=input_pred.columns
+            ),
+            show=False
+        )
+        st.pyplot(fig_local)
+
 
 # In[ ]:
 
 
-# ===============================
-# 5️⃣ XAI SIMPLE
-# ===============================
-st.header("5️⃣ XAI — Faktor Dominan (Global-based)")
 
-contrib = pd.DataFrame({
-    "Feature": FEATURES,
-    "Value": input_pred.iloc[0].values,
-    "Importance": model.feature_importances_
-}).sort_values(by="Importance", ascending=False)
-
-st.dataframe(contrib)
-
-# ===============================
-# 6️⃣ SHAP LOCAL
-# ===============================
-st.header("6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak")
-
-explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(input_pred)
-
-fig_local, ax_local = plt.subplots()
-shap.waterfall_plot(
-    shap.Explanation(
-        values=shap_values[1][0],
-        base_values=explainer.expected_value[1],
-        data=input_pred.iloc[0],
-        feature_names=input_pred.columns
-    ),
-    show=False
-)
-st.pyplot(fig_local)
 
