@@ -121,6 +121,7 @@ model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
+proba = model.predict_proba(X_test)
 
 # ===============================
 # 3️⃣ MODEL RESULT
@@ -186,9 +187,9 @@ if st.button("🔮 Predict Purchase"):
     prob = model.predict_proba(input_pred)[0][pred]
 
     if pred == 1:
-        st.success(f"🛒 Result: Will Buy ({prob*100:.2f}%)")
+        st.success(f"🛒 Result: Will Buy ( Confidence: {prob*100:.2f}%)")
     else:
-        st.warning(f"❌ Result: Will not Buy ({prob*100:.2f}%)")
+        st.warning(f"❌ Result: Will not Buy ( Confidence: {prob*100:.2f}%)")
 
     # ===============================
     # 6️⃣ XAI
