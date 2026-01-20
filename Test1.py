@@ -274,11 +274,23 @@ if st.session_state.trained:
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(input_pred)
 
+        # Handle binary or single-class safely
+        if isinstance(shap_values, list):
+            if len(shap_values) > 1:
+                shap_val = shap_values[1][0]
+                base_val = explainer.expected_value[1]
+            else:
+                shap_val = shap_values[0][0]
+                base_val = explainer.expected_value[0]
+        else:
+            shap_val = shap_values[0]
+            base_val = explainer.expected_value
+        
         fig_local, ax_local = plt.subplots()
         shap.waterfall_plot(
             shap.Explanation(
-                values=shap_values[0][0],
-                base_values=explainer.expected_value[1],
+                values=shap_val,
+                base_values=base_val,
                 data=input_pred.iloc[0],
                 feature_names=input_pred.columns
             ),
