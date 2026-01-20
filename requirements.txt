@@ -7,3 +7,4 @@ shap
 lime
 seaborn
 opencv-python-headless
+shap
