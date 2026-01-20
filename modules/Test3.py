@@ -24,6 +24,12 @@ def run_purchase_app():
     # ===============================
     if "df" not in st.session_state:
         st.session_state.df = None
+    if "model" not in st.session_state:
+        st.session_state.model = None
+    if "encoders" not in st.session_state:
+        st.session_state.encoders = None
+    if "trained" not in st.session_state:
+        st.session_state.trained = False
     
     
     # In[ ]:
