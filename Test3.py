@@ -16,7 +16,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 st.set_page_config(page_title="Purchase Prediction + XAI", layout="wide")
-st.title("🛒 Prediksi Pembelian Visitor (Revenue) + XAI")
+st.title("🛒 Consumer Purchase Decision Prediction")
+st.header("\"Why Does the Customer Decide to Buy?\"")
 
 # ===============================
 # SESSION DATASET
@@ -43,13 +44,13 @@ if uploaded:
     else:
         st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
 
-    st.success(f"✅ Dataset sekarang berisi {len(st.session_state.df)} baris")
+    st.success(f"✅ Dataset contain {len(st.session_state.df)} rows")
 
 # ===============================
 # STOP IF NO DATA
 # ===============================
 if st.session_state.df is None:
-    st.warning("⚠️ Silakan upload dataset dulu")
+    st.warning("⚠️ Upload the dataset to begin")
     st.stop()
 
 df = st.session_state.df.copy()
@@ -72,9 +73,9 @@ for col in cat_cols:
 # ===============================
 # 2️⃣ INPUT MANUAL TRAINING
 # ===============================
-st.header("2️⃣ Tambah Data Manual ke Dataset (Training)")
+st.header("2️⃣ Add new data into dataset (Training)")
 
-with st.expander("➕ Tambah 1 Baris Data Training"):
+with st.expander("➕ Add 1 new row into dataset"):
 
     manual_row = {}
 
@@ -93,7 +94,7 @@ with st.expander("➕ Tambah 1 Baris Data Training"):
             ignore_index=True
         )
 
-        st.success("✅ Data ditambahkan, model akan retrain")
+        st.success("✅ Input has been added, retraining model")
         st.rerun()
 
 
@@ -107,7 +108,7 @@ y = df["Revenue"]
 X = df.drop(columns=["Revenue"])
 
 if y.nunique() < 2:
-    st.error("❌ Dataset hanya punya 1 kelas. Tambahkan data kelas lain.")
+    st.error("❌ Dataset only has 1 class, adding to another class.")
     st.stop()
 
 # ===============================
@@ -122,11 +123,11 @@ y_pred = model.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
 
 # ===============================
-# 3️⃣ HASIL MODEL
+# 3️⃣ MODEL RESULT
 # ===============================
-st.header("3️⃣ Performa Model")
+st.header("3️⃣ Model Accuracy")
 
-st.success(f"🎯 Akurasi Model: {acc*100:.2f}%")
+st.success(f"🎯 Model Accuracy: {acc*100:.2f}%")
 
 
 # In[ ]:
@@ -156,7 +157,7 @@ st.dataframe(fi_df)
 # ===============================
 # 4️⃣ INPUT MANUAL TEST
 # ===============================
-st.header("4️⃣ Input Data untuk Test Prediksi")
+st.header("4️⃣ Add sample data to predict")
 
 input_test = {}
 
@@ -177,7 +178,7 @@ input_pred = pd.DataFrame([input_test])
 
 
 # ===============================
-# 5️⃣ PREDIKSI
+# 5️⃣ Prediction
 # ===============================
 if st.button("🔮 Predict Purchase"):
 
@@ -185,14 +186,14 @@ if st.button("🔮 Predict Purchase"):
     prob = model.predict_proba(input_pred)[0][pred]
 
     if pred == 1:
-        st.success(f"🛒 PREDIKSI: AKAN BELI ({prob*100:.2f}%)")
+        st.success(f"🛒 Result: Will Buy ({prob*100:.2f}%)")
     else:
-        st.warning(f"❌ PREDIKSI: TIDAK BELI ({prob*100:.2f}%)")
+        st.warning(f"❌ Result: Will not Buy ({prob*100:.2f}%)")
 
     # ===============================
-    # 6️⃣ XAI SEDERHANA
+    # 6️⃣ XAI
     # ===============================
-    st.header("6️⃣ XAI: Faktor Dominan")
+    st.header("6️⃣ XAI: Dominant Factors")
 
     top_feats = fi_df.head(5)
 
@@ -202,7 +203,7 @@ if st.button("🔮 Predict Purchase"):
     # ===============================
     # 7️⃣ SHAP LOCAL
     # ===============================
-    st.header("7️⃣ SHAP: Kenapa Prediksi Ini Terjadi?")
+    st.header("7️⃣ SHAP: Why this Product Sells Better?")
 
     explainer = shap.TreeExplainer(model)
     shap_exp_local = explainer(input_pred)
