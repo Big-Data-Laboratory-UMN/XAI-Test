@@ -191,7 +191,7 @@ def run_purchase_app():
         # ===============================
         # 7️⃣ SHAP LOCAL
         # ===============================
-        st.header("7️⃣ SHAP: Why this Product Sells Better?")
+        st.header("7️⃣ SHAP: What Makes Product Sells Better?")
     
         explainer = shap.TreeExplainer(model)
         shap_exp_local = explainer(input_pred)
