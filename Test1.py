@@ -16,215 +16,275 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 st.set_page_config(page_title="Engagement Predictor + XAI + SHAP", layout="wide")
-
-st.title("📊 Prediksi Viralitas Konten (Multi Upload + Manual Input + XAI + SHAP)")
+st.title("📊 Engagement Predictor — Adaptive Learning + XAI + SHAP")
 
 # ===============================
 # SESSION STATE
 # ===============================
 if "df" not in st.session_state:
     st.session_state.df = None
+if "model" not in st.session_state:
+    st.session_state.model = None
+if "encoders" not in st.session_state:
+    st.session_state.encoders = None
+if "trained" not in st.session_state:
+    st.session_state.trained = False
 
 # ===============================
-# UPLOAD CSV
+# CONFIG
 # ===============================
-st.header("📤 Upload Dataset CSV (Bisa berkali-kali, data akan digabung)")
-
-uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
-
-if uploaded_file is not None:
-    new_df = pd.read_csv(uploaded_file)
-
-    if st.session_state.df is None:
-        st.session_state.df = new_df.copy()
-    else:
-        st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
-
-    st.success(f"✅ Dataset ditambahkan! Total baris sekarang: {len(st.session_state.df)}")
-
-# ===============================
-# SHOW DATASET
-# ===============================
-if st.session_state.df is not None:
-    st.subheader("📄 Dataset Saat Ini")
-    st.write(f"Total rows: {len(st.session_state.df)}")
-    st.dataframe(st.session_state.df.head(50))
+FEATURES = [
+    "Type", "Category", "Post Month", "Post Weekday", "Post Hour", "Paid",
+    "Lifetime Post Total Reach", "Lifetime Engaged Users", "comment", "like", "share"
+]
 
 
 # In[ ]:
 
 
 # ===============================
-# ADD MANUAL ROW
+# FUNCTION: TRAIN PIPELINE
 # ===============================
-if st.session_state.df is not None:
-    st.header("➕ Tambah 1 Data Manual ke Dataset")
+def train_model(df):
 
-    df = st.session_state.df
+    df = df.copy().dropna()
 
-    input_row = {}
-
-    for col in df.columns:
-        if col == "Engagement_Label":
-            continue
-        if df[col].dtype == object:
-            input_row[col] = st.text_input(f"{col}", value=str(df[col].mode()[0]))
-        else:
-            input_row[col] = st.number_input(f"{col}", value=float(df[col].median()))
-
-    if st.button("➕ Tambahkan ke Dataset"):
-        new_row = pd.DataFrame([input_row])
-        st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-        st.success("✅ Data baru ditambahkan ke dataset!")
-
-
-# In[ ]:
-
-
-# ===============================
-# TRAINING PIPELINE
-# ===============================
-if st.session_state.df is not None and len(st.session_state.df) >= 5:
-
-st.header("🧠 Training Model Otomatis")
-
-df = st.session_state.df.copy()
-
-# ===============================
-# BASIC CLEANING
-# ===============================
-encoders = {}
-for col in df.columns:
-    if df[col].dtype == object:
+    encoders = {}
+    for col in ["Type"]:
         le = LabelEncoder()
-        df[col] = le.fit_transform(df[col].astype(str))
+        df[col] = le.fit_transform(df[col])
         encoders[col] = le
 
-# ===============================
-# CREATE LABEL IF NEEDED
-# ===============================
-if "Engagement_Label" not in df.columns:
-    if "Total Interactions" in df.columns:
+    if "Engagement_Label" not in df.columns:
         median_interaction = df["Total Interactions"].median()
         df["Engagement_Label"] = (df["Total Interactions"] > median_interaction).astype(int)
+
+    X = df[FEATURES]
+    y = df["Engagement_Label"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=42, stratify=y
+    )
+
+    model = RandomForestClassifier(
+        n_estimators=300,
+        max_depth=10,
+        random_state=42
+    )
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+
+    return model, encoders, acc, X_train, y_train
+
+
+# In[ ]:
+
+
+# ===============================
+# 1️⃣ UPLOAD CSV
+# ===============================
+st.header("1️⃣ Upload Dataset CSV")
+
+uploaded = st.file_uploader("Upload CSV (boleh berkali-kali, akan di-append)", type=["csv"])
+
+if st.button("📥 Upload & Train Model"):
+    if uploaded is not None:
+        new_df = pd.read_csv(uploaded)
+
+        if st.session_state.df is None:
+            st.session_state.df = new_df
+        else:
+            st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
+
+        model, encoders, acc, X_train, y_train = train_model(st.session_state.df)
+
+        st.session_state.model = model
+        st.session_state.encoders = encoders
+        st.session_state.acc = acc
+        st.session_state.X_train = X_train
+        st.session_state.y_train = y_train
+        st.session_state.trained = True
+
+        st.success("✅ Dataset diupdate & model berhasil dilatih ulang")
+
+
+# In[ ]:
+
+
+# ===============================
+# 2️⃣ INPUT MANUAL ROW
+# ===============================
+st.header("2️⃣ Tambah Data Manual ke Dataset")
+
+if st.session_state.encoders is None:
+    type_options = ["Photo", "Status"]
+else:
+    type_options = st.session_state.encoders["Type"].classes_
+
+type_input = st.selectbox("Type", type_options)
+category = st.number_input("Category", 1, 3, 2)
+post_month = st.number_input("Post Month", 1, 12, 12)
+weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 3)
+hour = st.number_input("Post Hour", 0, 23, 10)
+paid = st.selectbox("Paid Promotion?", [0, 1])
+reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 10000)
+engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 500)
+comment = st.number_input("Comment", 0, 5000, 10)
+like = st.number_input("Like", 0, 100000, 100)
+share = st.number_input("Share", 0, 5000, 10)
+
+if st.button("➕ Tambahkan & Train Ulang"):
+
+    if st.session_state.df is None:
+        st.warning("⚠️ Upload dataset dulu")
     else:
-        st.error("❌ Dataset harus punya kolom 'Total Interactions' atau 'Engagement_Label'")
-        st.stop()
+        if st.session_state.encoders:
+            type_encoded = st.session_state.encoders["Type"].transform([type_input])[0]
+        else:
+            type_encoded = 0
 
-# ===============================
-# FEATURES
-# ===============================
-drop_cols = ["Engagement_Label"]
-if "Total Interactions" in df.columns:
-    drop_cols.append("Total Interactions")
+        new_row = {
+            "Type": type_encoded,
+            "Category": category,
+            "Post Month": post_month,
+            "Post Weekday": weekday,
+            "Post Hour": hour,
+            "Paid": paid,
+            "Lifetime Post Total Reach": reach,
+            "Lifetime Engaged Users": engaged,
+            "comment": comment,
+            "like": like,
+            "share": share,
+            "Total Interactions": comment + like + share
+        }
 
-X = df.drop(columns=drop_cols)
-y = df["Engagement_Label"]
+        st.session_state.df = pd.concat(
+            [st.session_state.df, pd.DataFrame([new_row])],
+            ignore_index=True
+        )
 
+        model, encoders, acc, X_train, y_train = train_model(st.session_state.df)
 
-# In[ ]:
+        st.session_state.model = model
+        st.session_state.encoders = encoders
+        st.session_state.acc = acc
+        st.session_state.X_train = X_train
+        st.session_state.y_train = y_train
+        st.session_state.trained = True
 
-
-# ===============================
-# TRAIN TEST SPLIT
-# ===============================
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.25, random_state=42
-)
-
-# ===============================
-# TRAIN MODEL
-# ===============================
-model = RandomForestClassifier(
-    n_estimators=300,
-    max_depth=10,
-    random_state=42
-)
-model.fit(X_train, y_train)
-
-# ===============================
-# EVALUATION
-# ===============================
-y_pred = model.predict(X_test)
-acc = accuracy_score(y_test, y_pred)
-
-st.success(f"🎯 Akurasi Model: {acc*100:.2f}%")
+        st.success("✅ Data ditambahkan & model dilatih ulang")
 
 
 # In[ ]:
 
 
 # ===============================
-# GLOBAL FEATURE IMPORTANCE
+# 3️⃣ EVALUATION + GLOBAL XAI
 # ===============================
-st.header("🧠 Global XAI — Feature Importance")
+if st.session_state.trained:
 
-fi = pd.DataFrame({"Feature": X.columns,"Importance": model.feature_importances_}).sort_values(by="Importance", ascending=False)
+    st.header("3️⃣ Evaluasi Model & Global Feature Importance")
 
-fig, ax = plt.subplots()
-ax.barh(fi["Feature"], fi["Importance"])
-ax.invert_yaxis()
-ax.set_title("Global Feature Importance")
-st.pyplot(fig)
+    st.metric("🎯 Accuracy", f"{st.session_state.acc*100:.2f}%")
 
-st.dataframe(fi)
+    fi = pd.DataFrame({
+        "Feature": FEATURES,
+        "Importance": st.session_state.model.feature_importances_
+    }).sort_values(by="Importance", ascending=False)
+
+    fig, ax = plt.subplots()
+    ax.barh(fi["Feature"], fi["Importance"])
+    ax.invert_yaxis()
+    ax.set_title("Global Feature Importance")
+    st.pyplot(fig)
+
+    st.dataframe(fi)
+
+
+# In[ ]:
+
 
 # ===============================
-# SHAP GLOBAL
+# 4️⃣ INPUT UNTUK TEST PREDIKSI
 # ===============================
-st.header("🧠 SHAP Global Explanation")
+if st.session_state.trained:
+
+    st.header("4️⃣ Input Data untuk Test Prediksi")
+
+    type_input_p = st.selectbox("Type (prediksi)", type_options, key="p1")
+    category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="p2")
+    post_month_p = st.number_input("Post Month (prediksi)", 1, 12, 12, key="p3")
+    weekday_p = st.number_input("Post Weekday (prediksi)", 1, 7, 3, key="p4")
+    hour_p = st.number_input("Post Hour (prediksi)", 0, 23, 10, key="p5")
+    paid_p = st.selectbox("Paid Promotion? (prediksi)", [0, 1], key="p6")
+    reach_p = st.number_input("Lifetime Post Total Reach (prediksi)", 0, 1000000, 10000, key="p7")
+    engaged_p = st.number_input("Lifetime Engaged Users (prediksi)", 0, 100000, 500, key="p8")
+    comment_p = st.number_input("Comment (prediksi)", 0, 5000, 10, key="p9")
+    like_p = st.number_input("Like (prediksi)", 0, 100000, 100, key="p10")
+    share_p = st.number_input("Share (prediksi)", 0, 5000, 10, key="p11")
+
+    if st.button("🔮 Predict"):
+
+        type_encoded_p = st.session_state.encoders["Type"].transform([type_input_p])[0]
+
+        input_pred = pd.DataFrame([{
+            "Type": type_encoded_p,
+            "Category": category_p,
+            "Post Month": post_month_p,
+            "Post Weekday": weekday_p,
+            "Post Hour": hour_p,
+            "Paid": paid_p,
+            "Lifetime Post Total Reach": reach_p,
+            "Lifetime Engaged Users": engaged_p,
+            "comment": comment_p,
+            "like": like_p,
+            "share": share_p
+        }])
+
+        model = st.session_state.model
+
+        pred = model.predict(input_pred)[0]
+        prob = model.predict_proba(input_pred)[0][pred]
+
+        if pred == 1:
+            st.success(f"🔥 Prediksi: HIGH Engagement ({prob*100:.2f}%)")
+        else:
+            st.warning(f"❄️ Prediksi: LOW Engagement ({prob*100:.2f}%)")
+
+
+# In[ ]:
+
+
+# ===============================
+# 5️⃣ XAI SIMPLE
+# ===============================
+st.header("5️⃣ XAI — Faktor Dominan (Global-based)")
+
+contrib = pd.DataFrame({
+    "Feature": FEATURES,
+    "Value": input_pred.iloc[0].values,
+    "Importance": model.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+st.dataframe(contrib)
+
+# ===============================
+# 6️⃣ SHAP LOCAL
+# ===============================
+st.header("6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak")
 
 explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(X_train)
-
-fig_shap, ax_shap = plt.subplots()
-shap.summary_plot(shap_values[1], X_train, show=False)
-st.pyplot(fig_shap)
-
-
-# In[ ]:
-
-
-# ===============================
-# PREDICTION INPUT
-# ===============================
-st.header("🔮 Prediksi 1 Post Baru")
-
-input_pred = {}
-
-for col in X.columns:
-    if col in encoders:
-        val = st.selectbox(f"{col} (prediksi)", encoders[col].classes_)
-        input_pred[col] = encoders[col].transform([val])[0]
-    else:
-        input_pred[col] = st.number_input(f"{col} (prediksi)", value=float(X[col].median()))
-
-if st.button("🔮 Predict Engagement"):
-
-    input_df = pd.DataFrame([input_pred])
-
-    pred = model.predict(input_df)[0]
-    prob = model.predict_proba(input_df)[0][pred]
-
-    if pred == 1:
-        st.success(f"🔥 Prediksi: HIGH Engagement ({prob*100:.2f}%)")
-    else:
-        st.warning(f"❄️ Prediksi: LOW Engagement ({prob*100:.2f}%)")
-
-# ===============================
-# SHAP LOCAL
-# ===============================
-st.header("🔍 SHAP Local Explanation")
-
-shap_val_single = explainer.shap_values(input_df)
+shap_values = explainer.shap_values(input_pred)
 
 fig_local, ax_local = plt.subplots()
 shap.waterfall_plot(
     shap.Explanation(
-        values=shap_val_single[1][0],
+        values=shap_values[1][0],
         base_values=explainer.expected_value[1],
-        data=input_df.iloc[0],
-        feature_names=input_df.columns
+        data=input_pred.iloc[0],
+        feature_names=input_pred.columns
     ),
     show=False
 )
