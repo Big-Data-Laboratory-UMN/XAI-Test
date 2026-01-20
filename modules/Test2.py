@@ -97,7 +97,7 @@ def build_dataset():
 st.info("🔄 Building dataset from image folder...")
 df = build_dataset()
 
-if len(df) < 10:
+if len(df) < 5:
     st.error("❌ Dataset terlalu kecil / tidak terbaca.")
     st.stop()
 
