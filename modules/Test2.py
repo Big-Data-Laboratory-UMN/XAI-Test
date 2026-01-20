@@ -23,6 +23,8 @@ def run_ad_design_app():
     # ====================================
     
     def analyze_visual_content(img: Image.Image):
+        import pytesseract
+        
         img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
     
@@ -97,11 +99,46 @@ def run_ad_design_app():
         else:
             alignment = "Consistent"
     
-        # ========== CTA HEURISTIC ==========
-        has_cta_detected = 0
-        for (x,y,wc,hc) in large_blocks:
-            if hc > h*0.1 and wc > w*0.3 and y > h*0.4:
-                has_cta_detected = 1
+        # ========== CTA DETECTION WITH OCR (IMPROVED) ==========
+        # Extract text from image
+        try:
+            text = pytesseract.image_to_string(img, config='--psm 6')
+            text = text.lower()
+            
+            # Common CTA phrases
+            cta_keywords = [
+                'buy now', 'shop now', 'get started', 'sign up', 'subscribe',
+                'learn more', 'download', 'register', 'join', 'order now',
+                'get yours', 'claim', 'try free', 'book now', 'reserve',
+                'apply now', 'contact us', 'get quote', 'start free trial',
+                'add to cart', 'checkout', 'purchase', 'enroll', 'watch now',
+                'click here', 'discover', 'explore', 'find out', 'see more'
+            ]
+            
+            # Check if any CTA keyword is in the text
+            has_cta_detected = 0
+            detected_ctas = []
+            for keyword in cta_keywords:
+                if keyword in text:
+                    has_cta_detected = 1
+                    detected_ctas.append(keyword)
+            
+            # Fallback to geometric heuristic if no text CTA found
+            if has_cta_detected == 0:
+                for (x,y,wc,hc) in large_blocks:
+                    if hc > h*0.1 and wc > w*0.3 and y > h*0.4:
+                        has_cta_detected = 1
+                        detected_ctas = ["(geometric detection)"]
+                        break
+        except:
+            # If OCR fails, use geometric heuristic
+            has_cta_detected = 0
+            detected_ctas = []
+            for (x,y,wc,hc) in large_blocks:
+                if hc > h*0.1 and wc > w*0.3 and y > h*0.4:
+                    has_cta_detected = 1
+                    detected_ctas = ["(geometric detection)"]
+                    break
     
         # ========== EDGE DENSITY (for visual complexity) ==========
         edge_density = np.sum(edges > 0) / edges.size
@@ -119,6 +156,7 @@ def run_ad_design_app():
             "text_density": text_density,
             "alignment": alignment,
             "has_cta_detected": has_cta_detected,
+            "detected_ctas": detected_ctas,
             "edge_density": edge_density
         }
     
@@ -267,7 +305,10 @@ def run_ad_design_app():
         with col3:
             st.metric("Text Ratio", f"{analysis['text_ratio']*100:.2f}%")
             st.metric("Text Density", analysis["text_density"])
-            st.metric("CTA Detected", "YES" if analysis["has_cta_detected"] else "NO")
+            cta_display = "YES" if analysis["has_cta_detected"] else "NO"
+            st.metric("CTA Detected", cta_display)
+            if analysis["has_cta_detected"] and analysis["detected_ctas"]:
+                st.caption(f"Found: {', '.join(analysis['detected_ctas'][:3])}")  # Show up to 3 CTAs
     
         # ====================================
         # EFFECTIVENESS INDICATORS
