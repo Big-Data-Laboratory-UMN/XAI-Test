@@ -14,9 +14,9 @@ st.set_page_config(page_title="AI Marketing Suite + XAI", layout="wide")
 st.title("🚀 XAI Suite")
 
 tab1, tab2, tab3 = st.tabs([
-    "📊 Viralitas Konten",
-    "🎨 Evaluasi Desain Iklan",
-    "🛒 Prediksi Pembelian"
+    "📊 Social Media Engagement",
+    "🎨 Digital Ads Analyze",
+    "🛒 Purchase Intent Predictions"
 ])
 
 with tab1:
