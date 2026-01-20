@@ -204,6 +204,7 @@ if st.button("🔮 Predict Purchase"):
     # ===============================
     st.header("7️⃣ SHAP: Kenapa Prediksi Ini Terjadi?")
 
+    explainer = shap.TreeExplainer(model)
     shap_exp_local = explainer(input_pred)
 
     pred_class = int(pred)
