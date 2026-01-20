@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
 def run_ad_design_app():
 
     import streamlit as st
@@ -11,29 +10,31 @@ def run_ad_design_app():
     import cv2
     from PIL import Image, ImageEnhance
     
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.inspection import permutation_importance
+    from tensorflow.keras.models import load_model
     
     st.set_page_config(page_title="Ad Design Effectiveness AI + XAI", layout="wide")
     
     st.title("🎨 Visual Design Evaluation")
     st.header("\"Why Is This Design Considered More Effective?\"")
     
-    
-    # In[ ]:
-    
+    # ====================================
+    # LOAD CNN MODEL
+    # ====================================
+    @st.cache_resource
+    def load_cnn():
+        return load_model("ads_cnn_model.h5")
+
+    model = load_cnn()
     
     # ====================================
     # VISUAL ANALYZE
     # ====================================
-    
     def analyze_visual_content(img: Image.Image):
         img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
     
         h, w = gray.shape
     
-        # ========== BASIC STATS ==========
         brightness = np.mean(gray)
         contrast = np.std(gray)
     
@@ -41,7 +42,6 @@ def run_ad_design_app():
         mean_g = np.mean(img_cv[:, :, 1])
         mean_b = np.mean(img_cv[:, :, 0])
     
-        # ========== TEXT AREA ESTIMATION ==========
         edges = cv2.Canny(gray, 100, 200)
         kernel = np.ones((3,3), np.uint8)
         dilated = cv2.dilate(edges, kernel, iterations=2)
@@ -54,14 +54,13 @@ def run_ad_design_app():
         for cnt in contours:
             x,y,wc,hc = cv2.boundingRect(cnt)
             area = wc * hc
-            if area > 0.001 * (h*w):  # threshold small noise
+            if area > 0.001 * (h*w):
                 text_area += area
                 large_blocks.append((x,y,wc,hc))
     
         total_area = h * w
         text_ratio = text_area / total_area
     
-        # ========== TEXT DENSITY CLASS ==========
         if text_ratio < 0.05:
             text_density = "Low"
         elif text_ratio < 0.15:
@@ -69,8 +68,6 @@ def run_ad_design_app():
         else:
             text_density = "High"
     
-        # ========== ALIGNMENT CONSISTENCY ==========
-        # Project text blocks to X axis
         if len(large_blocks) >= 2:
             xs = [x for x,y,wc,hc in large_blocks]
             alignment_std = np.std(xs)
@@ -78,7 +75,6 @@ def run_ad_design_app():
         else:
             alignment = "Consistent"
     
-        # ========== CTA HEURISTIC ==========
         has_cta_detected = 0
         for (x,y,wc,hc) in large_blocks:
             if hc > h*0.1 and wc > w*0.3 and y > h*0.4:
@@ -96,146 +92,35 @@ def run_ad_design_app():
             "has_cta_detected": has_cta_detected
         }
     
-    
-    # In[ ]:
-    
-    
     # ====================================
-    # HELPER FUNCTIONS
+    # AUGMENTATION
     # ====================================
-    
-    def extract_features(img: Image.Image):
-        img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-    
-        brightness = np.mean(gray)
-        contrast = np.std(gray)
-    
-        edges = cv2.Canny(gray, 100, 200)
-        edge_density = np.sum(edges > 0) / edges.size
-    
-        return brightness, contrast, edge_density
-    
-    
     def augment_image(img):
         aug = {}
-    
-        # Brightness
         aug["Bright+"] = ImageEnhance.Brightness(img).enhance(1.5)
         aug["Bright-"] = ImageEnhance.Brightness(img).enhance(0.6)
-    
-        # Contrast
         aug["Contrast+"] = ImageEnhance.Contrast(img).enhance(1.5)
         aug["Contrast-"] = ImageEnhance.Contrast(img).enhance(0.6)
-    
-        # Flip
         aug["Flip"] = img.transpose(Image.FLIP_LEFT_RIGHT)
-    
         return aug
-    
-    
-    # In[ ]:
-    
-    
-    # ====================================
-    # SIMULATED TRAINING DATA
-    # ====================================
-    # Normally this comes from labeled dataset of ads
-    
-    np.random.seed(42)
-    
-    train_data = []
-    for i in range(200):
-        brightness = np.random.uniform(50, 200)
-        contrast = np.random.uniform(10, 80)
-        edge_density = np.random.uniform(0.01, 0.2)
-        has_cta = np.random.randint(0, 2)
-    
-        # Fake rule to generate label
-        score = (
-            0.4 * (brightness > 120) +
-            0.4 * (contrast > 30) +
-            0.5 * has_cta +
-            0.3 * (edge_density < 0.12)
-        )
-    
-        effective = 1 if score >= 1.2 else 0
-    
-        train_data.append([
-            brightness, contrast, edge_density, has_cta, effective
-        ])
-    
-    df = pd.DataFrame(train_data, columns=[
-        "brightness", "contrast", "edge_density", "has_cta", "effective"
-    ])
-    
-    X = df.drop(columns=["effective"])
-    y = df["effective"]
-    
-    
-    # In[ ]:
-    
-    
-    # ====================================
-    # TRAIN MODEL
-    # ====================================
-    model = RandomForestClassifier(n_estimators=300, max_depth=8, random_state=42)
-    model.fit(X, y)
-    
-    # ====================================
-    # GLOBAL XAI
-    # ====================================
-    st.header("🧠 Global XAI — Most Effective Elements")
-    
-    fi = pd.DataFrame({
-        "Feature": X.columns,
-        "Importance": model.feature_importances_
-    }).sort_values(by="Importance", ascending=False)
-    
-    fig, ax = plt.subplots()
-    ax.barh(fi["Feature"], fi["Importance"])
-    ax.invert_yaxis()
-    ax.set_title("Global Feature Importance")
-    st.pyplot(fig)
-    
-    st.dataframe(fi)
-    
-    
-    # In[ ]:
-    
     
     # ====================================
     # UI INPUT
     # ====================================
     st.header("🖼️ Upload Image File")
-    
     uploaded = st.file_uploader("Upload ads image", type=["jpg", "png", "jpeg"])
-    
-    #has_cta = st.selectbox("Apakah ada CTA (Buy Now, Learn More, etc)?", [0, 1])
-    #format_type = st.selectbox("Format Iklan", ["Square", "Vertical", "Horizontal"])
-    
-    #format_map = {
-    #    "Square": 0,
-    #    "Vertical": 1,
-    #    "Horizontal": 2
-    #}
-    
-    
-    # In[ ]:
-    
     
     # ====================================
     # MAIN LOGIC
     # ====================================
     if uploaded is not None:
         img = Image.open(uploaded).convert("RGB")
-    
         st.image(img, caption="Original Design", width=300)
     
         # ===============================
-        # ANALISIS VISUAL KONTEN
+        # ANALISIS VISUAL
         # ===============================
-        st.header("🔎 Analysis on ads")
+        st.header("🔎 Analysis on Ads")
     
         analysis = analyze_visual_content(img)
     
@@ -254,98 +139,44 @@ def run_ad_design_app():
             st.metric("Alignment", analysis["alignment"])
             st.metric("CTA Detected (AI)", "YES" if analysis["has_cta_detected"] else "NO")
     
-        st.markdown("""
-        **Short Analyze Interpretation:**
-        - Text Density High → risk on clutter
-        - Low Contrast → ads hard to read
-        - Inconsistent Alignment → less attractive visual
-        - CTA detected → More Effective
-        """)
+        # ===============================
+        # CNN PREDICTION
+        # ===============================
+        img_resized = img.resize((224,224))
+        img_arr = np.array(img_resized) / 255.0
+        img_arr = np.expand_dims(img_arr, axis=0)
     
-        st.image(img, caption="Original Design", width=300)
+        prob = model.predict(img_arr)[0][0]
+        pred = 1 if prob > 0.5 else 0
     
-        brightness, contrast, edge_density = extract_features(img)
-        has_cta = 1 if analysis["has_cta_detected"] else 0
-        
-        input_df = pd.DataFrame([{
-            "brightness": brightness,
-            "contrast": contrast,
-            "edge_density": edge_density,
-            "has_cta": has_cta
-        }])
+        st.subheader("📢 Prediction Results")
     
-        pred = model.predict(input_df)[0]
-        prob = model.predict_proba(input_df)[0][pred]
-
-        # ====================================
-        # AUGMENTATION
-        # ====================================
-        st.header("🧪 Augmentation Simulation (Design & Interpretation)")
+        if pred == 1:
+            st.success(f"✅ Prediction: EFFECTIVE ({prob*100:.2f}%)")
+        else:
+            st.warning(f"⚠️ Prediction: LESS EFFECTIVE ({(1-prob)*100:.2f}%)")
+    
+        # ===============================
+        # AUGMENTATION SIMULATION
+        # ===============================
+        st.header("🧪 Augmentation Simulation")
     
         aug_imgs = augment_image(img)
-    
         cols = st.columns(len(aug_imgs))
     
         for i, (name, aug_img) in enumerate(aug_imgs.items()):
             with cols[i]:
                 st.image(aug_img, caption=name, width=200)
     
-                b, c, e = extract_features(aug_img)
+                aug_resized = aug_img.resize((224,224))
+                aug_arr = np.array(aug_resized) / 255.0
+                aug_arr = np.expand_dims(aug_arr, axis=0)
     
-                aug_input = pd.DataFrame([{
-                    "brightness": b,
-                    "contrast": c,
-                    "edge_density": e,
-                    "has_cta": has_cta
-                }])
-    
-                p = model.predict(aug_input)[0]
-                pr = model.predict_proba(aug_input)[0][p]
+                pr = model.predict(aug_arr)[0][0]
+                p = 1 if pr > 0.5 else 0
     
                 if p == 1:
                     st.success(f"Effective ({pr*100:.1f}%)")
                 else:
-                    st.warning(f"Less Effective ({pr*100:.1f}%)")
-
-        
-        st.subheader("📢 Prediction Results")
-    
-        if pred == 1:
-            st.success(f"✅ Prediction: EFFECTIVE ({prob*100:.2f}%)")
-        else:
-            st.warning(f"⚠️ Prediction: LESS EFFECTIVE ({prob*100:.2f}%)")
-    
-    
-    # In[ ]:
-    
-    
-    # ====================================
-        # LOCAL XAI
-        # ====================================
-        st.header("🔍 Kenapa hasilnya seperti ini? (Local XAI)")
-    
-        perm = permutation_importance(model, X, y, n_repeats=10, random_state=42)
-    
-        local_imp = pd.DataFrame({
-            "Feature": X.columns,
-            "Importance": perm.importances_mean
-        }).sort_values(by="Importance", ascending=False)
-    
-        fig2, ax2 = plt.subplots()
-        ax2.barh(local_imp["Feature"], local_imp["Importance"])
-        ax2.invert_yaxis()
-        ax2.set_title("Local Explanation (Permutation Importance)")
-        st.pyplot(fig2)
-    
-        st.dataframe(local_imp)
-    
-        st.subheader("🏆 Faktor Paling Menentukan:")
-        for i, row in local_imp.head(3).iterrows():
-            st.write(f"• **{row['Feature']}**")
-    
-    
-    # In[ ]:
-    
-    
-        
+                    st.warning(f"Less Effective ({(1-pr)*100:.1f}%)")
 
