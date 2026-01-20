@@ -277,7 +277,7 @@ if st.session_state.trained:
         fig_local, ax_local = plt.subplots()
         shap.waterfall_plot(
             shap.Explanation(
-                values=shap_values[1][0],
+                values=shap_values[0][0],
                 base_values=explainer.expected_value[1],
                 data=input_pred.iloc[0],
                 feature_names=input_pred.columns
