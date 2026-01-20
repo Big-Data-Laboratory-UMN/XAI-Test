@@ -72,7 +72,7 @@ def analyze_visual_content(img: Image.Image):
 def build_dataset():
     data = []
 
-    for label, cls in enumerate(["not_effective", "effective"]):
+    for label, cls in enumerate(["not effective", "effective"]):
         folder = os.path.join(DATASET_DIR, cls)
         if not os.path.exists(folder):
             continue
@@ -97,7 +97,7 @@ def build_dataset():
 st.info("🔄 Building dataset from image folder...")
 df = build_dataset()
 
-if len(df) < 5:
+if len(df) < 10:
     st.error("❌ Dataset terlalu kecil / tidak terbaca.")
     st.stop()
 
