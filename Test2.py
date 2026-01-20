@@ -149,7 +149,6 @@ for i in range(200):
     contrast = np.random.uniform(10, 80)
     edge_density = np.random.uniform(0.01, 0.2)
     has_cta = np.random.randint(0, 2)
-    format_type = np.random.randint(0, 3)  # 0 square, 1 vertical, 2 horizontal
 
     # Fake rule to generate label
     score = (
@@ -162,11 +161,11 @@ for i in range(200):
     effective = 1 if score >= 1.2 else 0
 
     train_data.append([
-        brightness, contrast, edge_density, has_cta, format_type, effective
+        brightness, contrast, edge_density, has_cta, effective
     ])
 
 df = pd.DataFrame(train_data, columns=[
-    "brightness", "contrast", "edge_density", "has_cta", "format_type", "effective"
+    "brightness", "contrast", "edge_density", "has_cta", "effective"
 ])
 
 X = df.drop(columns=["effective"])
@@ -211,14 +210,14 @@ st.header("🖼️ Upload Desain Iklan")
 
 uploaded = st.file_uploader("Upload image iklan", type=["jpg", "png", "jpeg"])
 
-has_cta = st.selectbox("Apakah ada CTA (Buy Now, Learn More, etc)?", [0, 1])
-format_type = st.selectbox("Format Iklan", ["Square", "Vertical", "Horizontal"])
+#has_cta = st.selectbox("Apakah ada CTA (Buy Now, Learn More, etc)?", [0, 1])
+#format_type = st.selectbox("Format Iklan", ["Square", "Vertical", "Horizontal"])
 
-format_map = {
-    "Square": 0,
-    "Vertical": 1,
-    "Horizontal": 2
-}
+#format_map = {
+#    "Square": 0,
+#    "Vertical": 1,
+#    "Horizontal": 2
+#}
 
 
 # In[ ]:
@@ -265,13 +264,13 @@ if uploaded is not None:
     st.image(img, caption="Original Design", width=300)
 
     brightness, contrast, edge_density = extract_features(img)
-
+    has_cta = 1 if analysis["has_cta_detected"] else 0
+    
     input_df = pd.DataFrame([{
         "brightness": brightness,
         "contrast": contrast,
         "edge_density": edge_density,
-        "has_cta": has_cta,
-        "format_type": format_map[format_type]
+        "has_cta": has_cta
     }])
 
     pred = model.predict(input_df)[0]
@@ -335,8 +334,7 @@ if uploaded is not None:
                 "brightness": b,
                 "contrast": c,
                 "edge_density": e,
-                "has_cta": has_cta,
-                "format_type": format_map[format_type]
+                "has_cta": has_cta
             }])
 
             p = model.predict(aug_input)[0]
