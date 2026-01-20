@@ -7,26 +7,55 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import shap
+import numpy as np
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.inspection import permutation_importance
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 st.set_page_config(page_title="Purchase Prediction + XAI", layout="wide")
-
 st.title("🛒 Prediksi Pembelian Visitor (Revenue) + XAI")
 
 # ===============================
-# LOAD DATA
+# SESSION DATASET
 # ===============================
-df = pd.read_csv("shop_intent.csv")
+if "df" not in st.session_state:
+    st.session_state.df = None
 
 
 # In[ ]:
 
 
 # ===============================
-# ENCODING CATEGORICAL
+# 1️⃣ UPLOAD CSV
+# ===============================
+st.header("1️⃣ Upload Dataset CSV")
+
+uploaded = st.file_uploader("Upload CSV (Online Shoppers)", type=["csv"])
+
+if uploaded:
+    new_df = pd.read_csv(uploaded)
+
+    if st.session_state.df is None:
+        st.session_state.df = new_df
+    else:
+        st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
+
+    st.success(f"✅ Dataset sekarang berisi {len(st.session_state.df)} baris")
+
+# ===============================
+# STOP IF NO DATA
+# ===============================
+if st.session_state.df is None:
+    st.warning("⚠️ Silakan upload dataset dulu")
+    st.stop()
+
+df = st.session_state.df.copy()
+
+# ===============================
+# ENCODING
 # ===============================
 cat_cols = ["Month", "VisitorType", "Weekend", "Revenue"]
 
@@ -36,130 +65,174 @@ for col in cat_cols:
     df[col] = le.fit_transform(df[col])
     encoders[col] = le
 
-y = df["Revenue"]
-X = df.drop(columns=["Revenue"])
+
+# In[ ]:
+
+
+# ===============================
+# 2️⃣ INPUT MANUAL TRAINING
+# ===============================
+st.header("2️⃣ Tambah Data Manual ke Dataset (Training)")
+
+with st.expander("➕ Tambah 1 Baris Data Training"):
+
+    manual_row = {}
+
+    for col in df.columns:
+        if col in ["Month", "VisitorType", "Weekend", "Revenue"]:
+            manual_row[col] = st.selectbox(f"{col}", encoders[col].classes_)
+        else:
+            manual_row[col] = st.number_input(col, value=float(df[col].median()))
+
+    if st.button("➕ Tambahkan ke Dataset & Retrain"):
+        for col in ["Month", "VisitorType", "Weekend", "Revenue"]:
+            manual_row[col] = encoders[col].transform([manual_row[col]])[0]
+
+        st.session_state.df = pd.concat(
+            [st.session_state.df, pd.DataFrame([manual_row])],
+            ignore_index=True
+        )
+
+        st.success("✅ Data ditambahkan, model akan retrain")
+        st.rerun()
 
 
 # In[ ]:
 
+
+# ===============================
+# TARGET & FEATURE
+# ===============================
+y = df["Revenue"]
+X = df.drop(columns=["Revenue"])
+
+if y.nunique() < 2:
+    st.error("❌ Dataset hanya punya 1 kelas. Tambahkan data kelas lain.")
+    st.stop()
 
 # ===============================
 # TRAIN MODEL
 # ===============================
-model = RandomForestClassifier(
-    n_estimators=300,
-    max_depth=10,
-    random_state=42
-)
-model.fit(X, y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-st.success("✅ Model trained successfully!")
+model = RandomForestClassifier(n_estimators=300, max_depth=10, random_state=42)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+acc = accuracy_score(y_test, y_pred)
+
+# ===============================
+# 3️⃣ HASIL MODEL
+# ===============================
+st.header("3️⃣ Performa Model")
+
+st.success(f"🎯 Akurasi Model: {acc*100:.2f}%")
 
 
 # In[ ]:
 
 
 # ===============================
-# GLOBAL XAI
+# GLOBAL FEATURE IMPORTANCE
 # ===============================
-st.header("🧠 Global XAI — Faktor yang Mempengaruhi Pembelian")
-
-importances = model.feature_importances_
+st.subheader("🧠 Global Feature Importance")
 
 fi_df = pd.DataFrame({
     "Feature": X.columns,
-    "Importance": importances
+    "Importance": model.feature_importances_
 }).sort_values(by="Importance", ascending=False)
 
 fig, ax = plt.subplots()
 ax.barh(fi_df["Feature"], fi_df["Importance"])
 ax.invert_yaxis()
-ax.set_title("Global Feature Importance")
 st.pyplot(fig)
 
 st.dataframe(fi_df)
 
-
-# In[ ]:
-
-
 # ===============================
-# FEATURE SELECTION
+# SHAP GLOBAL
 # ===============================
-st.subheader("✂️ Feature Selection Otomatis")
+st.subheader("🧠 SHAP Global Explanation")
 
-threshold = st.slider("Minimum importance threshold", 0.0, 0.2, 0.02)
+explainer = shap.TreeExplainer(model)
+shap_exp = explainer(X_train)
 
-selected_features = fi_df[fi_df["Importance"] >= threshold]["Feature"].tolist()
+shap_vals_global = shap_exp.values[:, :, 1]
 
-st.write("✅ Fitur yang dipakai model:")
-st.write(selected_features)
-
-X_selected = X[selected_features]
-
-model_fs = RandomForestClassifier(n_estimators=300, random_state=42)
-model_fs.fit(X_selected, y)
+fig_shap, ax_shap = plt.subplots()
+shap.summary_plot(shap_vals_global, X_train, show=False)
+st.pyplot(fig_shap)
 
 
 # In[ ]:
 
 
 # ===============================
-# INPUT UI
+# 4️⃣ INPUT MANUAL TEST
 # ===============================
-st.header("✍️ Input Data Visitor")
+st.header("4️⃣ Input Data untuk Test Prediksi")
 
-def ui_number(name, default=0.0):
-    return st.number_input(name, value=float(default))
-
-input_data = {}
+input_test = {}
 
 for col in X.columns:
-    if col == "Month":
-        input_data[col] = st.selectbox("Month", encoders["Month"].classes_)
-    elif col == "VisitorType":
-        input_data[col] = st.selectbox("VisitorType", encoders["VisitorType"].classes_)
-    elif col == "Weekend":
-        input_data[col] = st.selectbox("Weekend", encoders["Weekend"].classes_)
+    if col in ["Month", "VisitorType", "Weekend"]:
+        input_test[col] = st.selectbox(f"{col} (Test)", encoders[col].classes_)
     else:
-        input_data[col] = st.number_input(col, value=float(df[col].median()))
+        input_test[col] = st.number_input(f"{col} (Test)", value=float(df[col].median()))
 
-# Encode categorical input
+# encode
 for col in ["Month", "VisitorType", "Weekend"]:
-    input_data[col] = encoders[col].transform([input_data[col]])[0]
+    input_test[col] = encoders[col].transform([input_test[col]])[0]
+
+input_pred = pd.DataFrame([input_test])
 
 
 # In[ ]:
 
 
 # ===============================
-    # LOCAL XAI
-    # ===============================
-    st.header("🔍 Local Explanation — Kenapa hasilnya seperti ini?")
+# 5️⃣ PREDIKSI
+# ===============================
+if st.button("🔮 Predict Purchase"):
 
-    perm = permutation_importance(
-        model_fs,
-        X_selected,
-        y,
-        n_repeats=10,
-        random_state=42
+    pred = model.predict(input_pred)[0]
+    prob = model.predict_proba(input_pred)[0][pred]
+
+    if pred == 1:
+        st.success(f"🛒 PREDIKSI: AKAN BELI ({prob*100:.2f}%)")
+    else:
+        st.warning(f"❌ PREDIKSI: TIDAK BELI ({prob*100:.2f}%)")
+
+    # ===============================
+    # 6️⃣ XAI SEDERHANA
+    # ===============================
+    st.header("6️⃣ XAI: Faktor Dominan")
+
+    top_feats = fi_df.head(5)
+
+    for _, row in top_feats.iterrows():
+        st.write(f"• **{row['Feature']}** (importance: {row['Importance']:.4f})")
+
+    # ===============================
+    # 7️⃣ SHAP LOCAL
+    # ===============================
+    st.header("7️⃣ SHAP: Kenapa Prediksi Ini Terjadi?")
+
+    shap_exp_local = explainer(input_pred)
+
+    pred_class = int(pred)
+
+    shap_vals = shap_exp_local.values[0][:, pred_class]
+    base_val = shap_exp_local.base_values[0][pred_class]
+
+    shap_explanation = shap.Explanation(
+        values=shap_vals,
+        base_values=base_val,
+        data=input_pred.iloc[0],
+        feature_names=input_pred.columns
     )
 
-    local_imp = pd.DataFrame({
-        "Feature": selected_features,
-        "Importance": perm.importances_mean
-    }).sort_values(by="Importance", ascending=False)
-
-    fig2, ax2 = plt.subplots()
-    ax2.barh(local_imp["Feature"], local_imp["Importance"])
-    ax2.invert_yaxis()
-    ax2.set_title("Local Feature Importance")
-    st.pyplot(fig2)
-
-    st.dataframe(local_imp)
-
-    st.subheader("🏆 Faktor Paling Menentukan:")
-
-    for i, row in local_imp.head(5).iterrows():
-        st.write(f"• **{row['Feature']}** (impact: {row['Importance']:.4f})")
+    fig_local, ax_local = plt.subplots()
+    shap.plots.waterfall(shap_explanation, show=False)
+    st.pyplot(fig_local)
 
