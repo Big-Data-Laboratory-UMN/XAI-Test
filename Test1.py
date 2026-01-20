@@ -267,35 +267,33 @@ if st.session_state.trained:
         st.dataframe(contrib)
 
         # ===============================
-        # 6️⃣ SHAP LOCAL
+        # 6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak
         # ===============================
         st.header("6️⃣ SHAP — Kenapa Konten Ini Viral / Tidak")
-
+        
         explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(input_pred)
-
-        # Handle binary or single-class safely
-        if isinstance(shap_values, list):
-            if len(shap_values) > 1:
-                shap_val = shap_values[1][0]
-                base_val = explainer.expected_value[1]
-            else:
-                shap_val = shap_values[0][0]
-                base_val = explainer.expected_value[0]
-        else:
-            shap_val = shap_values[0]
-            base_val = explainer.expected_value
+        
+        # SHAP explanation object (new API)
+        shap_exp = explainer(input_pred)
+        
+        # predicted class
+        pred_class = int(pred)
+        
+        # shap values for that class
+        shap_vals = shap_exp.values[0][:, pred_class]
+        
+        base_val = shap_exp.base_values[0][pred_class]
+        
+        # build explanation object for single class
+        shap_explanation = shap.Explanation(
+            values=shap_vals,
+            base_values=base_val,
+            data=input_pred.iloc[0],
+            feature_names=input_pred.columns
+        )
         
         fig_local, ax_local = plt.subplots()
-        shap.waterfall_plot(
-            shap.Explanation(
-                values=shap_val,
-                base_values=base_val,
-                data=input_pred.iloc[0],
-                feature_names=input_pred.columns
-            ),
-            show=False
-        )
+        shap.plots.waterfall(shap_explanation, show=False)
         st.pyplot(fig_local)
 
 
