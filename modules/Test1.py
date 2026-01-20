@@ -135,7 +135,7 @@ def run_media_engagement_app():
     like = st.number_input("Like", 0, 100000, 100)
     share = st.number_input("Share", 0, 5000, 10)
     
-    if st.button("➕ Tambahkan & Train Ulang"):
+    if st.button("➕ Add & Re-train"):
     
         if st.session_state.df is None:
             st.warning("⚠️ Upload data to begin")
