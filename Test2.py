@@ -23,6 +23,83 @@ st.title("🎨 AI Evaluasi Efektivitas Desain Iklan Digital + XAI")
 
 
 # ====================================
+# VISUAL ANALYZE
+# ====================================
+
+def analyze_visual_content(img: Image.Image):
+    img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+
+    h, w = gray.shape
+
+    # ========== BASIC STATS ==========
+    brightness = np.mean(gray)
+    contrast = np.std(gray)
+
+    mean_r = np.mean(img_cv[:, :, 2])
+    mean_g = np.mean(img_cv[:, :, 1])
+    mean_b = np.mean(img_cv[:, :, 0])
+
+    # ========== TEXT AREA ESTIMATION ==========
+    edges = cv2.Canny(gray, 100, 200)
+    kernel = np.ones((3,3), np.uint8)
+    dilated = cv2.dilate(edges, kernel, iterations=2)
+
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    text_area = 0
+    large_blocks = []
+
+    for cnt in contours:
+        x,y,wc,hc = cv2.boundingRect(cnt)
+        area = wc * hc
+        if area > 0.001 * (h*w):  # threshold small noise
+            text_area += area
+            large_blocks.append((x,y,wc,hc))
+
+    total_area = h * w
+    text_ratio = text_area / total_area
+
+    # ========== TEXT DENSITY CLASS ==========
+    if text_ratio < 0.05:
+        text_density = "Low"
+    elif text_ratio < 0.15:
+        text_density = "Medium"
+    else:
+        text_density = "High"
+
+    # ========== ALIGNMENT CONSISTENCY ==========
+    # Project text blocks to X axis
+    if len(large_blocks) >= 2:
+        xs = [x for x,y,wc,hc in large_blocks]
+        alignment_std = np.std(xs)
+        alignment = "Consistent" if alignment_std < w * 0.05 else "Inconsistent"
+    else:
+        alignment = "Consistent"
+
+    # ========== CTA HEURISTIC ==========
+    has_cta_detected = 0
+    for (x,y,wc,hc) in large_blocks:
+        if hc > h*0.1 and wc > w*0.3 and y > h*0.4:
+            has_cta_detected = 1
+
+    return {
+        "brightness": brightness,
+        "contrast": contrast,
+        "mean_r": mean_r,
+        "mean_g": mean_g,
+        "mean_b": mean_b,
+        "text_ratio": text_ratio,
+        "text_density": text_density,
+        "alignment": alignment,
+        "has_cta_detected": has_cta_detected
+    }
+
+
+# In[ ]:
+
+
+# ====================================
 # HELPER FUNCTIONS
 # ====================================
 
@@ -155,6 +232,38 @@ if uploaded is not None:
 
     st.image(img, caption="Original Design", width=300)
 
+    # ===============================
+    # ANALISIS VISUAL KONTEN
+    # ===============================
+    st.header("🔎 Analisis Otomatis Konten Visual")
+
+    analysis = analyze_visual_content(img)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Brightness", f"{analysis['brightness']:.1f}")
+        st.metric("Contrast", f"{analysis['contrast']:.1f}")
+        st.metric("Mean R", f"{analysis['mean_r']:.1f}")
+        st.metric("Mean G", f"{analysis['mean_g']:.1f}")
+        st.metric("Mean B", f"{analysis['mean_b']:.1f}")
+
+    with col2:
+        st.metric("Text / Image Ratio", f"{analysis['text_ratio']*100:.2f}%")
+        st.metric("Text Density", analysis["text_density"])
+        st.metric("Alignment", analysis["alignment"])
+        st.metric("CTA Detected (AI)", "YES" if analysis["has_cta_detected"] else "NO")
+
+    st.markdown("""
+    **Interpretasi Singkat:**
+    - Text Density tinggi → risiko clutter
+    - Kontras rendah → iklan sulit dibaca
+    - Alignment tidak konsisten → visual tidak rapi
+    - CTA terdeteksi → potensi konversi lebih tinggi
+    """)
+
+    st.image(img, caption="Original Design", width=300)
+
     brightness, contrast, edge_density = extract_features(img)
 
     input_df = pd.DataFrame([{
@@ -237,29 +346,4 @@ if uploaded is not None:
                 st.success(f"Effective ({pr*100:.1f}%)")
             else:
                 st.warning(f"Less Effective ({pr*100:.1f}%)")
-
-
-# In[ ]:
-
-
-# ====================================
-# ETHICS
-# ====================================
-st.header("⚖️ Diskusi Etika")
-
-st.markdown("""
-**Batas antara optimasi desain dan manipulasi visual:**
-
-- AI sebaiknya:
-  - Membantu meningkatkan *clarity, readability, usability*
-  - Membantu brand menyampaikan pesan lebih efektif
-
-- AI tidak boleh:
-  - Mengeksploitasi bias psikologis secara berlebihan
-  - Memanipulasi emosi (fear, addiction, FOMO berlebihan)
-  - Menyesatkan secara visual
-
-**Prinsip etis:**
-> AI = alat bantu desain, bukan mesin manipulasi perilaku manusia.
-""")
 
