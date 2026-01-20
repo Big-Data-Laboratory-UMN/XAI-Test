@@ -19,7 +19,7 @@ def run_ad_design_app():
     # ================================
     # CONFIG
     # ================================
-    DATASET_DIR = "ads_dataset"
+    DATASET_DIR = "modules/ads_dataset"
     
     st.set_page_config(page_title="Ad Design Effectiveness AI + XAI", layout="wide")
     st.title("🎨 Ad Design Effectiveness AI + Explainability")
