@@ -159,16 +159,16 @@ def run_media_engagement_app():
         type_options = st.session_state.encoders["Type"].classes_
     
     type_input = st.selectbox("Type", type_options, key="tab1_type_select")
-    category = st.number_input("Category", 1, 3, 1, key="tab1_category")
-    post_month = st.number_input("Post Month", 1, 12, 1, key="tab1_month")
+    category = st.number_input("Category (1-3)", 1, 3, 1, key="tab1_category")
+    post_month = st.number_input("Post Month (1-12)", 1, 12, 1, key="tab1_month")
     weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 1, key="tab1_weekday")
-    hour = st.number_input("Post Hour", 0, 23, 0, key="tab1_hour")
-    paid = st.selectbox("Paid Promotion?", [0, 1], key="tab1_paid")
-    reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 0, key="tab1_reach")
-    engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 0, key="tab1_engaged")
-    comment = st.number_input("Comment", 0, 5000, 0, key="tab1_comment")
-    like = st.number_input("Like", 0, 100000, 0, key="tab1_like")
-    share = st.number_input("Share", 0, 5000, 0, key="tab1_share")
+    hour = st.number_input("Post Hour (0-23)", 0, 23, 0, key="tab1_hour")
+    paid = st.selectbox("Paid Promotion? (0 = No, 1 = Yes)", [0, 1], key="tab1_paid")
+    reach = st.number_input("Lifetime Post Total Reach (0-1000000)", 0, 1000000, 0, key="tab1_reach")
+    engaged = st.number_input("Lifetime Engaged Users (0-100000)", 0, 100000, 0, key="tab1_engaged")
+    comment = st.number_input("Comment (0-5000)", 0, 5000, 0, key="tab1_comment")
+    like = st.number_input("Like (0-100000)", 0, 100000, 0, key="tab1_like")
+    share = st.number_input("Share (0-5000)", 0, 5000, 0, key="tab1_share")
     
     if st.button("➕ Add & Re-train", key="tab1_add_retrain_btn"):
     
