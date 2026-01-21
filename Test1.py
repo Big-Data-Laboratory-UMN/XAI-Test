@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
 def run_media_engagement_app():
-
     import streamlit as st
     import pandas as pd
     import numpy as np
     import matplotlib.pyplot as plt
     import shap
+    import os
     
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.preprocessing import LabelEncoder
@@ -30,6 +29,8 @@ def run_media_engagement_app():
         st.session_state.encoders = None
     if "trained" not in st.session_state:
         st.session_state.trained = False
+    if "initial_data_loaded" not in st.session_state:
+        st.session_state.initial_data_loaded = False
     
     # ===============================
     # CONFIG
@@ -39,9 +40,25 @@ def run_media_engagement_app():
         "Lifetime Post Total Reach", "Lifetime Engaged Users", "comment", "like", "share"
     ]
     
+    # ===============================
+    # LOAD INITIAL CSV (ONLY ONCE)
+    # ===============================
+    INITIAL_CSV_PATH = "dataset_Facebook.csv"  # Change this to your CSV file path
     
-    # In[ ]:
-    
+    if not st.session_state.initial_data_loaded:
+        if os.path.exists(INITIAL_CSV_PATH):
+            try:
+                initial_df = pd.read_csv(INITIAL_CSV_PATH, sep=';')
+                st.session_state.df = initial_df
+                st.session_state.initial_data_loaded = True
+                st.info(f"✅ Initial dataset loaded: {len(initial_df)} rows from '{INITIAL_CSV_PATH}'")
+            except Exception as e:
+                st.error(f"❌ Error loading initial CSV: {e}")
+                st.stop()
+        else:
+            st.error(f"❌ Initial CSV file not found: '{INITIAL_CSV_PATH}'")
+            st.warning("⚠️ Please ensure the CSV file exists in the correct location.")
+            st.stop()
     
     # ===============================
     # FUNCTION: TRAIN PIPELINE
@@ -79,64 +96,81 @@ def run_media_engagement_app():
     
         return model, encoders, acc, X_train, y_train
     
-    
-    # In[ ]:
-    
-    
     # ===============================
-    # 1️⃣ UPLOAD CSV
+    # AUTO-TRAIN MODEL ON INITIAL LOAD
     # ===============================
-    st.header("1️⃣ Upload Dataset CSV")
-    
-    uploaded = st.file_uploader("Upload CSV (next upload will be appended)", type=["csv"])
-    
-    if st.button("📥 Upload & Train Model"):
-        if uploaded is not None:
-            new_df = pd.read_csv(uploaded, sep=';')
-    
-            if st.session_state.df is None:
-                st.session_state.df = new_df
-            else:
-                st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
-    
+    if st.session_state.df is not None and not st.session_state.trained:
+        with st.spinner("🔄 Training initial model..."):
             model, encoders, acc, X_train, y_train = train_model(st.session_state.df)
-    
+            
             st.session_state.model = model
             st.session_state.encoders = encoders
             st.session_state.acc = acc
             st.session_state.X_train = X_train
             st.session_state.y_train = y_train
             st.session_state.trained = True
+            
+            st.success(f"✅ Initial model trained! Current dataset: {len(st.session_state.df)} rows")
     
-            st.success("✅ Dataset updated, retrain model")
+    # ===============================
+    # DISPLAY CURRENT DATASET INFO
+    # ===============================
+    if st.session_state.df is not None:
+        st.info(f"📊 Current dataset size: **{len(st.session_state.df)} rows**")
+        with st.expander("👁️ View Current Dataset (First 10 rows)"):
+            st.dataframe(st.session_state.df.head(10))
     
+    # ===============================
+    # 1️⃣ UPLOAD ADDITIONAL CSV
+    # ===============================
+    st.header("1️⃣ Upload Additional Dataset CSV (Optional)")
     
-    # In[ ]:
+    uploaded = st.file_uploader("Upload CSV to append to existing dataset", type=["csv"], key="tab1_media_engagement_uploader")
     
+    if st.button("📥 Upload & Re-train Model", key="tab1_upload_train_btn"):
+        if uploaded is not None:
+            new_df = pd.read_csv(uploaded, sep=';')
+            
+            # Append to existing dataset
+            st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
+            
+            # Retrain model
+            model, encoders, acc, X_train, y_train = train_model(st.session_state.df)
+            
+            st.session_state.model = model
+            st.session_state.encoders = encoders
+            st.session_state.acc = acc
+            st.session_state.X_train = X_train
+            st.session_state.y_train = y_train
+            st.session_state.trained = True
+            
+            st.success(f"✅ Added {len(new_df)} new rows! Total dataset: {len(st.session_state.df)} rows. Model retrained.")
+        else:
+            st.warning("⚠️ Please select a file to upload")
     
     # ===============================
     # 2️⃣ INPUT MANUAL ROW
     # ===============================
-    st.header("2️⃣ Add new Data to Dataset")
+    st.header("2️⃣ Add New Data to Dataset")
     
     if st.session_state.encoders is None:
         type_options = ["Photo", "Status"]
     else:
         type_options = st.session_state.encoders["Type"].classes_
     
-    type_input = st.selectbox("Type", type_options)
-    category = st.number_input("Category", 1, 3, 2)
-    post_month = st.number_input("Post Month", 1, 12, 12)
-    weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 3)
-    hour = st.number_input("Post Hour", 0, 23, 10)
-    paid = st.selectbox("Paid Promotion?", [0, 1])
-    reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 10000)
-    engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 500)
-    comment = st.number_input("Comment", 0, 5000, 10)
-    like = st.number_input("Like", 0, 100000, 100)
-    share = st.number_input("Share", 0, 5000, 10)
+    type_input = st.selectbox("Type", type_options, key="tab1_type_select")
+    category = st.number_input("Category", 1, 3, 2, key="tab1_category")
+    post_month = st.number_input("Post Month", 1, 12, 12, key="tab1_month")
+    weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 3, key="tab1_weekday")
+    hour = st.number_input("Post Hour", 0, 23, 10, key="tab1_hour")
+    paid = st.selectbox("Paid Promotion?", [0, 1], key="tab1_paid")
+    reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 10000, key="tab1_reach")
+    engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 500, key="tab1_engaged")
+    comment = st.number_input("Comment", 0, 5000, 10, key="tab1_comment")
+    like = st.number_input("Like", 0, 100000, 100, key="tab1_like")
+    share = st.number_input("Share", 0, 5000, 10, key="tab1_share")
     
-    if st.button("➕ Tambahkan & Train Ulang"):
+    if st.button("➕ Add & Re-train", key="tab1_add_retrain_btn"):
     
         if st.session_state.df is None:
             st.warning("⚠️ Upload data to begin")
@@ -175,11 +209,7 @@ def run_media_engagement_app():
             st.session_state.y_train = y_train
             st.session_state.trained = True
     
-            st.success("✅ Data Added, retrain model")
-    
-    
-    # In[ ]:
-    
+            st.success(f"✅ Data Added! Total dataset: {len(st.session_state.df)} rows. Model retrained.")
     
     # ===============================
     # 3️⃣ EVALUATION + GLOBAL XAI
@@ -203,10 +233,6 @@ def run_media_engagement_app():
     
         st.dataframe(fi)
     
-    
-    # In[ ]:
-    
-    
     # ===============================
     # 4️⃣ INPUT UNTUK TEST PREDIKSI
     # ===============================
@@ -214,19 +240,19 @@ def run_media_engagement_app():
     
         st.header("4️⃣ Input data for Predictions")
     
-        type_input_p = st.selectbox("Type (prediksi)", type_options, key="p1")
-        category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="p2")
-        post_month_p = st.number_input("Post Month (prediksi)", 1, 12, 12, key="p3")
-        weekday_p = st.number_input("Post Weekday (prediksi)", 1, 7, 3, key="p4")
-        hour_p = st.number_input("Post Hour (prediksi)", 0, 23, 10, key="p5")
-        paid_p = st.selectbox("Paid Promotion? (prediksi)", [0, 1], key="p6")
-        reach_p = st.number_input("Lifetime Post Total Reach (prediksi)", 0, 1000000, 10000, key="p7")
-        engaged_p = st.number_input("Lifetime Engaged Users (prediksi)", 0, 100000, 500, key="p8")
-        comment_p = st.number_input("Comment (prediksi)", 0, 5000, 10, key="p9")
-        like_p = st.number_input("Like (prediksi)", 0, 100000, 100, key="p10")
-        share_p = st.number_input("Share (prediksi)", 0, 5000, 10, key="p11")
+        type_input_p = st.selectbox("Type (prediksi)", type_options, key="tab1_p1")
+        category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="tab1_p2")
+        post_month_p = st.number_input("Post Month (prediksi)", 1, 12, 12, key="tab1_p3")
+        weekday_p = st.number_input("Post Weekday (prediksi)", 1, 7, 3, key="tab1_p4")
+        hour_p = st.number_input("Post Hour (prediksi)", 0, 23, 10, key="tab1_p5")
+        paid_p = st.selectbox("Paid Promotion? (prediksi)", [0, 1], key="tab1_p6")
+        reach_p = st.number_input("Lifetime Post Total Reach (prediksi)", 0, 1000000, 10000, key="tab1_p7")
+        engaged_p = st.number_input("Lifetime Engaged Users (prediksi)", 0, 100000, 500, key="tab1_p8")
+        comment_p = st.number_input("Comment (prediksi)", 0, 5000, 10, key="tab1_p9")
+        like_p = st.number_input("Like (prediksi)", 0, 100000, 100, key="tab1_p10")
+        share_p = st.number_input("Share (prediksi)", 0, 5000, 10, key="tab1_p11")
     
-        if st.button("🔮 Predict"):
+        if st.button("🔮 Predict", key="tab1_predict_btn"):
     
             type_encoded_p = st.session_state.encoders["Type"].transform([type_input_p])[0]
     
@@ -296,10 +322,3 @@ def run_media_engagement_app():
             fig_local, ax_local = plt.subplots()
             shap.plots.waterfall(shap_explanation, show=False)
             st.pyplot(fig_local)
-    
-    
-    # In[ ]:
-
-
-
-
