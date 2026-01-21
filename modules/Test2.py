@@ -12,8 +12,6 @@ def run_ad_design_app():
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.inspection import permutation_importance
     
-    st.set_page_config(page_title="Ad Design Effectiveness AI + XAI", layout="wide")
-    
     st.title("🎨 Visual Design Evaluation")
     st.header("\"Why Is This Design Considered More Effective?\"")
     
