@@ -276,4 +276,4 @@ def run_media_engagement_app():
             fig_local, ax_local = plt.subplots()
             shap.plots.waterfall(shap_explanation, show=False)
             st.pyplot(fig_local)
-            plt.close(fig)
+            plt.close(fig_local)
