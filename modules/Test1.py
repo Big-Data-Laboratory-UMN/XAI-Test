@@ -7,13 +7,13 @@ def run_media_engagement_app():
     import numpy as np
     import matplotlib.pyplot as plt
     import shap
-    import os
     
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.preprocessing import LabelEncoder
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score
     
+    st.set_page_config(page_title="Engagement Predictor + XAI + SHAP", layout="wide")
     st.title("📊 Social Media Content Engagement Prediction (High vs Low Engagement)")
     st.header("\"Why does This content Get More Likes and Shares?\"")
     
@@ -28,8 +28,6 @@ def run_media_engagement_app():
         st.session_state.encoders = None
     if "trained" not in st.session_state:
         st.session_state.trained = False
-    if "initial_data_loaded" not in st.session_state:
-        st.session_state.initial_data_loaded = False
     
     # ===============================
     # CONFIG
@@ -38,26 +36,6 @@ def run_media_engagement_app():
         "Type", "Category", "Post Month", "Post Weekday", "Post Hour", "Paid",
         "Lifetime Post Total Reach", "Lifetime Engaged Users", "comment", "like", "share"
     ]
-    
-    # ===============================
-    # LOAD INITIAL CSV (ONLY ONCE)
-    # ===============================
-    INITIAL_CSV_PATH = "dataset_Facebook.csv"  # Change this to your CSV file path
-    
-    if not st.session_state.initial_data_loaded:
-        if os.path.exists(INITIAL_CSV_PATH):
-            try:
-                initial_df = pd.read_csv(INITIAL_CSV_PATH, sep=';')
-                st.session_state.df = initial_df
-                st.session_state.initial_data_loaded = True
-                st.info(f"✅ Initial dataset loaded: {len(initial_df)} rows from '{INITIAL_CSV_PATH}'")
-            except Exception as e:
-                st.error(f"❌ Error loading initial CSV: {e}")
-                st.stop()
-        else:
-            st.error(f"❌ Initial CSV file not found: '{INITIAL_CSV_PATH}'")
-            st.warning("⚠️ Please ensure the CSV file exists in the correct location.")
-            st.stop()
     
     # ===============================
     # FUNCTION: TRAIN PIPELINE
@@ -96,61 +74,37 @@ def run_media_engagement_app():
         return model, encoders, acc, X_train, y_train
     
     # ===============================
-    # AUTO-TRAIN MODEL ON INITIAL LOAD
+    # 1️⃣ UPLOAD CSV
     # ===============================
-    if st.session_state.df is not None and not st.session_state.trained:
-        with st.spinner("🔄 Training initial model..."):
-            model, encoders, acc, X_train, y_train = train_model(st.session_state.df)
-            
-            st.session_state.model = model
-            st.session_state.encoders = encoders
-            st.session_state.acc = acc
-            st.session_state.X_train = X_train
-            st.session_state.y_train = y_train
-            st.session_state.trained = True
-            
-            st.success(f"✅ Initial model trained! Current dataset: {len(st.session_state.df)} rows")
+    st.header("1️⃣ Upload Dataset CSV")
     
-    # ===============================
-    # DISPLAY CURRENT DATASET INFO
-    # ===============================
-    if st.session_state.df is not None:
-        st.info(f"📊 Current dataset size: **{len(st.session_state.df)} rows**")
-        with st.expander("👁️ View Current Dataset (First 10 rows)"):
-            st.dataframe(st.session_state.df.head(10))
+    # ADDED UNIQUE KEY FOR TAB 1
+    uploaded = st.file_uploader("Upload CSV (next upload will be appended)", type=["csv"], key="tab1_media_engagement_uploader")
     
-    # ===============================
-    # 1️⃣ UPLOAD ADDITIONAL CSV
-    # ===============================
-    st.header("1️⃣ Upload Additional Dataset CSV (Optional)")
-    
-    uploaded = st.file_uploader("Upload CSV to append to existing dataset", type=["csv"], key="tab1_media_engagement_uploader")
-    
-    if st.button("📥 Upload & Re-train Model", key="tab1_upload_train_btn"):
+    if st.button("📥 Upload & Train Model", key="tab1_upload_train_btn"):
         if uploaded is not None:
             new_df = pd.read_csv(uploaded, sep=';')
-            
-            # Append to existing dataset
-            st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
-            
-            # Retrain model
+    
+            if st.session_state.df is None:
+                st.session_state.df = new_df
+            else:
+                st.session_state.df = pd.concat([st.session_state.df, new_df], ignore_index=True)
+    
             model, encoders, acc, X_train, y_train = train_model(st.session_state.df)
-            
+    
             st.session_state.model = model
             st.session_state.encoders = encoders
             st.session_state.acc = acc
             st.session_state.X_train = X_train
             st.session_state.y_train = y_train
             st.session_state.trained = True
-            
-            st.success(f"✅ Added {len(new_df)} new rows! Total dataset: {len(st.session_state.df)} rows. Model retrained.")
-        else:
-            st.warning("⚠️ Please select a file to upload")
+    
+            st.success("✅ Dataset updated, retrain model")
     
     # ===============================
     # 2️⃣ INPUT MANUAL ROW
     # ===============================
-    st.header("2️⃣ Add New Data to Dataset")
+    st.header("2️⃣ Add new Data to Dataset")
     
     if st.session_state.encoders is None:
         type_options = ["Photo", "Status"]
@@ -208,7 +162,7 @@ def run_media_engagement_app():
             st.session_state.y_train = y_train
             st.session_state.trained = True
     
-            st.success(f"✅ Data Added! Total dataset: {len(st.session_state.df)} rows. Model retrained.")
+            st.success("✅ Data Added, retrain model")
     
     # ===============================
     # 3️⃣ EVALUATION + GLOBAL XAI
