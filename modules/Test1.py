@@ -193,17 +193,17 @@ def run_media_engagement_app():
     
         st.header("4️⃣ Input data for Predictions")
     
-        type_input_p = st.selectbox("Type (prediksi)", type_options, key="tab1_p1")
-        category_p = st.number_input("Category (prediksi)", 1, 3, 2, key="tab1_p2")
-        post_month_p = st.number_input("Post Month (prediksi)", 1, 12, 12, key="tab1_p3")
-        weekday_p = st.number_input("Post Weekday (prediksi)", 1, 7, 3, key="tab1_p4")
-        hour_p = st.number_input("Post Hour (prediksi)", 0, 23, 10, key="tab1_p5")
-        paid_p = st.selectbox("Paid Promotion? (prediksi)", [0, 1], key="tab1_p6")
-        reach_p = st.number_input("Lifetime Post Total Reach (prediksi)", 0, 1000000, 10000, key="tab1_p7")
-        engaged_p = st.number_input("Lifetime Engaged Users (prediksi)", 0, 100000, 500, key="tab1_p8")
-        comment_p = st.number_input("Comment (prediksi)", 0, 5000, 10, key="tab1_p9")
-        like_p = st.number_input("Like (prediksi)", 0, 100000, 100, key="tab1_p10")
-        share_p = st.number_input("Share (prediksi)", 0, 5000, 10, key="tab1_p11")
+        type_input_p = st.selectbox("Type (prediction)", type_options, key="tab1_p1")
+        category_p = st.number_input("Category (prediction)", 1, 3, 2, key="tab1_p2")
+        post_month_p = st.number_input("Post Month (prediction)", 1, 12, 12, key="tab1_p3")
+        weekday_p = st.number_input("Post Weekday (prediction)", 1, 7, 3, key="tab1_p4")
+        hour_p = st.number_input("Post Hour (prediction)", 0, 23, 10, key="tab1_p5")
+        paid_p = st.selectbox("Paid Promotion? (prediction)", [0, 1], key="tab1_p6")
+        reach_p = st.number_input("Lifetime Post Total Reach (prediction)", 0, 1000000, 10000, key="tab1_p7")
+        engaged_p = st.number_input("Lifetime Engaged Users (prediction)", 0, 100000, 500, key="tab1_p8")
+        comment_p = st.number_input("Comment (prediction)", 0, 5000, 10, key="tab1_p9")
+        like_p = st.number_input("Like (prediction)", 0, 100000, 100, key="tab1_p10")
+        share_p = st.number_input("Share (prediction)", 0, 5000, 10, key="tab1_p11")
     
         if st.button("🔮 Predict", key="tab1_predict_btn"):
     
