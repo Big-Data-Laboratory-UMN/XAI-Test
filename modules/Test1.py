@@ -183,6 +183,7 @@ def run_media_engagement_app():
         ax.invert_yaxis()
         ax.set_title("Global Feature Importance")
         st.pyplot(fig)
+        plt.close(fig)
     
         st.dataframe(fi)
     
@@ -275,3 +276,4 @@ def run_media_engagement_app():
             fig_local, ax_local = plt.subplots()
             shap.plots.waterfall(shap_explanation, show=False)
             st.pyplot(fig_local)
+            plt.close(fig)
