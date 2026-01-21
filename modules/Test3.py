@@ -35,7 +35,7 @@ def run_purchase_app():
     # ===============================
     # LOAD INITIAL CSV (ONLY ONCE)
     # ===============================
-    INITIAL_CSV_PATH = "initial_purchase_data.csv"  # Change this to your CSV file path
+    INITIAL_CSV_PATH = "shop_intent.csv"  # Change this to your CSV file path
     
     if not st.session_state.initial_purchase_loaded:
         if os.path.exists(INITIAL_CSV_PATH):
