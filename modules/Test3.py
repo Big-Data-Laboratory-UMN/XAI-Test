@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
+
 def run_purchase_app():
     import streamlit as st
     import pandas as pd
     import matplotlib.pyplot as plt
     import shap
     import numpy as np
-    import os
     
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.preprocessing import LabelEncoder
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score
     
+    st.set_page_config(page_title="Purchase Prediction + XAI", layout="wide")
     st.title("🛒 Consumer Purchase Decision Prediction")
     st.header("\"Why Does the Customer Decide to Buy?\"")
     
@@ -28,55 +30,24 @@ def run_purchase_app():
         st.session_state.encoders_purchase = None
     if "trained_purchase" not in st.session_state:
         st.session_state.trained_purchase = False
-    if "initial_purchase_loaded" not in st.session_state:
-        st.session_state.initial_purchase_loaded = False
     
     # ===============================
-    # LOAD INITIAL CSV (ONLY ONCE)
+    # 1️⃣ UPLOAD CSV
     # ===============================
-    INITIAL_CSV_PATH = "shop_intent.csv"  # Change this to your CSV file path
+    st.header("1️⃣ Upload Dataset CSV")
     
-    if not st.session_state.initial_purchase_loaded:
-        if os.path.exists(INITIAL_CSV_PATH):
-            try:
-                initial_df = pd.read_csv(INITIAL_CSV_PATH)
-                st.session_state.df_purchase = initial_df
-                st.session_state.initial_purchase_loaded = True
-                st.info(f"✅ Initial dataset loaded: {len(initial_df)} rows from '{INITIAL_CSV_PATH}'")
-            except Exception as e:
-                st.error(f"❌ Error loading initial CSV: {e}")
-                st.stop()
+    # UNIQUE KEY FOR TAB 3
+    uploaded = st.file_uploader("Upload CSV (Online Shoppers)", type=["csv"], key="tab3_purchase_uploader")
+    
+    if uploaded:
+        new_df = pd.read_csv(uploaded)
+    
+        if st.session_state.df_purchase is None:
+            st.session_state.df_purchase = new_df
         else:
-            st.error(f"❌ Initial CSV file not found: '{INITIAL_CSV_PATH}'")
-            st.warning("⚠️ Please ensure the CSV file exists in the correct location.")
-            st.stop()
-    
-    # ===============================
-    # DISPLAY CURRENT DATASET INFO
-    # ===============================
-    if st.session_state.df_purchase is not None:
-        st.info(f"📊 Current dataset size: **{len(st.session_state.df_purchase)} rows**")
-        with st.expander("👁️ View Current Dataset (First 10 rows)"):
-            st.dataframe(st.session_state.df_purchase.head(10))
-    
-    # ===============================
-    # 1️⃣ UPLOAD ADDITIONAL CSV
-    # ===============================
-    st.header("1️⃣ Upload Additional Dataset CSV (Optional)")
-    
-    uploaded = st.file_uploader("Upload CSV to append to existing dataset", type=["csv"], key="tab3_purchase_uploader")
-    
-    if st.button("📥 Upload & Append to Dataset", key="tab3_upload_append_btn"):
-        if uploaded is not None:
-            new_df = pd.read_csv(uploaded)
-            
-            # Append to existing dataset
             st.session_state.df_purchase = pd.concat([st.session_state.df_purchase, new_df], ignore_index=True)
-            
-            st.success(f"✅ Added {len(new_df)} new rows! Total dataset: {len(st.session_state.df_purchase)} rows")
-            st.rerun()
-        else:
-            st.warning("⚠️ Please select a file to upload")
+    
+        st.success(f"✅ Dataset contain {len(st.session_state.df_purchase)} rows")
     
     # ===============================
     # STOP IF NO DATA
@@ -124,7 +95,7 @@ def run_purchase_app():
                 ignore_index=True
             )
     
-            st.success(f"✅ Data added! Total dataset: {len(st.session_state.df_purchase)} rows")
+            st.success("✅ Input has been added, retraining model")
             st.rerun()
     
     # ===============================
