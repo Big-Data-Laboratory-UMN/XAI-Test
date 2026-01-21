@@ -112,16 +112,16 @@ def run_media_engagement_app():
         type_options = st.session_state.encoders["Type"].classes_
     
     type_input = st.selectbox("Type", type_options, key="tab1_type_select")
-    category = st.number_input("Category", 1, 3, 2, key="tab1_category")
-    post_month = st.number_input("Post Month", 1, 12, 12, key="tab1_month")
-    weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 3, key="tab1_weekday")
-    hour = st.number_input("Post Hour", 0, 23, 10, key="tab1_hour")
-    paid = st.selectbox("Paid Promotion?", [0, 1], key="tab1_paid")
-    reach = st.number_input("Lifetime Post Total Reach", 0, 1000000, 10000, key="tab1_reach")
-    engaged = st.number_input("Lifetime Engaged Users", 0, 100000, 500, key="tab1_engaged")
-    comment = st.number_input("Comment", 0, 5000, 10, key="tab1_comment")
-    like = st.number_input("Like", 0, 100000, 100, key="tab1_like")
-    share = st.number_input("Share", 0, 5000, 10, key="tab1_share")
+    category = st.number_input("Category (1-3)", 1, 3, 1, key="tab1_category")
+    post_month = st.number_input("Post Month (1-12)", 1, 12, 1, key="tab1_month")
+    weekday = st.number_input("Post Weekday (1=Mon, 7=Sun)", 1, 7, 1, key="tab1_weekday")
+    hour = st.number_input("Post Hour (0-23)", 0, 23, 0, key="tab1_hour")
+    paid = st.selectbox("Paid Promotion? (0 = No, 1 = Yes)" , [0, 1], key="tab1_paid")
+    reach = st.number_input("Lifetime Post Total Reach (0 - 1000000)", 0, 1000000, 0, key="tab1_reach")
+    engaged = st.number_input("Lifetime Engaged Users (0 - 100000)", 0, 100000, 0, key="tab1_engaged")
+    comment = st.number_input("Comment (0 - 5000)", 0, 5000, 0, key="tab1_comment")
+    like = st.number_input("Like (0 - 100000)", 0, 100000, 0, key="tab1_like")
+    share = st.number_input("Share (0 - 5000)", 0, 5000, 0, key="tab1_share")
     
     if st.button("➕ Add & Re-train", key="tab1_add_retrain_btn"):
     
@@ -194,16 +194,16 @@ def run_media_engagement_app():
         st.header("4️⃣ Input data for Predictions")
     
         type_input_p = st.selectbox("Type (prediction)", type_options, key="tab1_p1")
-        category_p = st.number_input("Category (prediction)", 1, 3, 2, key="tab1_p2")
-        post_month_p = st.number_input("Post Month (prediction)", 1, 12, 12, key="tab1_p3")
-        weekday_p = st.number_input("Post Weekday (prediction)", 1, 7, 3, key="tab1_p4")
-        hour_p = st.number_input("Post Hour (prediction)", 0, 23, 10, key="tab1_p5")
+        category_p = st.number_input("Category (prediction)", 1, 3, 1, key="tab1_p2")
+        post_month_p = st.number_input("Post Month (prediction)", 1, 12, 1, key="tab1_p3")
+        weekday_p = st.number_input("Post Weekday (prediction)", 1, 7, 1, key="tab1_p4")
+        hour_p = st.number_input("Post Hour (prediction)", 0, 23, 0, key="tab1_p5")
         paid_p = st.selectbox("Paid Promotion? (prediction)", [0, 1], key="tab1_p6")
-        reach_p = st.number_input("Lifetime Post Total Reach (prediction)", 0, 1000000, 10000, key="tab1_p7")
-        engaged_p = st.number_input("Lifetime Engaged Users (prediction)", 0, 100000, 500, key="tab1_p8")
-        comment_p = st.number_input("Comment (prediction)", 0, 5000, 10, key="tab1_p9")
-        like_p = st.number_input("Like (prediction)", 0, 100000, 100, key="tab1_p10")
-        share_p = st.number_input("Share (prediction)", 0, 5000, 10, key="tab1_p11")
+        reach_p = st.number_input("Lifetime Post Total Reach (prediction)", 0, 1000000, 0, key="tab1_p7")
+        engaged_p = st.number_input("Lifetime Engaged Users (prediction)", 0, 100000, 0, key="tab1_p8")
+        comment_p = st.number_input("Comment (prediction)", 0, 5000, 0, key="tab1_p9")
+        like_p = st.number_input("Like (prediction)", 0, 100000, 0, key="tab1_p10")
+        share_p = st.number_input("Share (prediction)", 0, 5000, 0, key="tab1_p11")
     
         if st.button("🔮 Predict", key="tab1_predict_btn"):
     
