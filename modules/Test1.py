@@ -43,12 +43,12 @@ def run_media_engagement_app():
     # ===============================
     # LOAD INITIAL CSV (ONLY ONCE)
     # ===============================
-    INITIAL_CSV_PATH = "initial_media_data.csv"  # Change this to your CSV file path
+    INITIAL_CSV_PATH = "dataset_Facebook.csv"  # Change this to your CSV file path
     
     if not st.session_state.initial_data_loaded:
         if os.path.exists(INITIAL_CSV_PATH):
             try:
-                initial_df = pd.read_csv("dataset_Facebook", sep=';')
+                initial_df = pd.read_csv(INITIAL_CSV_PATH, sep=';')
                 st.session_state.df = initial_df
                 st.session_state.initial_data_loaded = True
                 st.info(f"✅ Initial dataset loaded: {len(initial_df)} rows from '{INITIAL_CSV_PATH}'")
