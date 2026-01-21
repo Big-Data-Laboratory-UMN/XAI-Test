@@ -14,7 +14,6 @@ def run_purchase_app():
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score
     
-    st.set_page_config(page_title="Purchase Prediction + XAI", layout="wide")
     st.title("🛒 Consumer Purchase Decision Prediction")
     st.header("\"Why Does the Customer Decide to Buy?\"")
     
