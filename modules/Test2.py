@@ -261,6 +261,7 @@ def run_ad_design_app():
     ax.set_title("Global Feature Importance")
     ax.set_xlabel("Importance Score")
     st.pyplot(fig)
+    plt.close(fig)
     
     st.dataframe(fi)
     
@@ -435,6 +436,7 @@ def run_ad_design_app():
         ax2.set_title("Local Explanation (Permutation Importance)")
         ax2.set_xlabel("Importance Score")
         st.pyplot(fig2)
+        plt.close(fig2)
     
         st.dataframe(local_imp)
     
