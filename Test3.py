@@ -171,6 +171,7 @@ def run_purchase_app():
     ax.barh(fi_df["Feature"], fi_df["Importance"])
     ax.invert_yaxis()
     st.pyplot(fig)
+    plt.close(fig)
     
     st.dataframe(fi_df)
     
@@ -241,3 +242,4 @@ def run_purchase_app():
         fig_local, ax_local = plt.subplots()
         shap.plots.waterfall(shap_explanation, show=False)
         st.pyplot(fig_local)
+        plt.close(fig_local)
