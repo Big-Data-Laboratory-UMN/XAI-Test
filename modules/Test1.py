@@ -14,7 +14,6 @@ def run_media_engagement_app():
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score
     
-    st.set_page_config(page_title="Engagement Predictor + XAI + SHAP", layout="wide")
     st.title("📊 Social Media Content Engagement Prediction (High vs Low Engagement)")
     st.header("\"Why does This content Get More Likes and Shares?\"")
     
